@@ -3,7 +3,7 @@ import os
 import sys
 import time
 
-class MYCLASS:
+class GFFMunger:
    def __init__(self,options):
       self.logger = logging.getLogger(__name__)
       self.verbose                    = options.verbose

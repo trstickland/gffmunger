@@ -1,4 +1,4 @@
-import os
+#import os
 import shutil
 import sys
 import glob
@@ -12,14 +12,14 @@ if os.path.exists('VERSION'):
   version = open('VERSION').read().strip()
 
 setup(
-    name='MYPROJECT',
+    name='gffmunger',
     version=version,
-    description='WHAT TIM DID NEXT',
-	long_description=read('README.md'),
+    description='Munger of GFF files.  Proper description to follow.',
+	 long_description=read('README.md'),
     packages = find_packages(),
     author='Tim Stickland',
     author_email='path-help@sanger.ac.uk',
-    url='https://github.com/sanger-pathogens/MYPROJECT',
+    url='https://github.com/trstickland/gffmunger',
     scripts=glob.glob('scripts/*'),
     test_suite='nose.collector',
     tests_require=['nose >= 1.3'],

@@ -66,5 +66,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
    apt-get update -qq
    apt-get install -y git python3 python3-setuptools python3-biopython python3-pip
+   ln -s /vagrant ./GFFMunger
   SHELL
 end

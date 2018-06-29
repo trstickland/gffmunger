@@ -107,6 +107,9 @@ ENV/
 # mypy
 .mypy_cache/
 
+# sqlite db files
+*.db
+
 # vagrant runtime stuff
 .vagrant
 ubuntu-*-cloudimg-console.log

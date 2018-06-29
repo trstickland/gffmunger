@@ -1,1 +1,1 @@
-python3 -m unittest discover --start-directory gffmunger/tests/ --verbose --pattern  '*_tests.py'
+python3 -m unittest discover --start-directory gffmunger/tests/ --pattern  '*_tests.py' "$@"

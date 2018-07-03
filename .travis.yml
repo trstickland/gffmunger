@@ -8,6 +8,7 @@ cache:
   - "$HOME/.cache/pip"
 install:
   - sudo apt-get -y install genometools
+  - pip3 install pyyaml gffutils
   - python3 setup.py install
 script:
   - "./run_tests.sh" 

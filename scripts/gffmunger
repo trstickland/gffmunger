@@ -18,10 +18,11 @@ except pkg_resources.DistributionNotFound:
 parser = argparse.ArgumentParser(
 	description = 'A munger of GFF files.  Proper description to follow.',
 	usage = __file__+' [options]', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--foo', '-f', help='Example option foo', type=InputTypes.is_foo_valid )
-parser.add_argument('--output_file', '-o', help='Output file [STDOUT]')
-parser.add_argument('--verbose', '-v', action='store_true', help='Turn on debugging [%(default)s]', default = False)
-parser.add_argument('--version', action='version', version=str(version))
+#parser.add_argument('--foo', '-f', help='Example option foo', type=InputTypes.is_foo_valid )
+parser.add_argument('--verbose', '-v', action='store_true', help = 'Turn on debugging [%(default)s]', default = False)
+parser.add_argument('--version',       action='version',    version = str(version))
+parser.add_argument('--output_file',   '-o', help = 'Output file [STDOUT]')
+parser.add_argument('--config',        '-c', help = 'Config file [%(default)s]', default = 'config.yml')
 
 options = parser.parse_args()
 

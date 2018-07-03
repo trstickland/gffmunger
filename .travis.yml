@@ -7,7 +7,7 @@ cache:
   - "build"
   - "$HOME/.cache/pip"
 install:
-  - apt-get -y install genometools
+  - sudo apt-get -y install genometools
   - python3 setup.py install
 script:
   - "./run_tests.sh" 

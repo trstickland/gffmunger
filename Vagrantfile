@@ -67,10 +67,8 @@ Vagrant.configure("2") do |config|
    apt-get update -qq
    apt-get install -y genometools
    apt-get install -y git python3 python-setuptools python3-biopython python3-pip
-   # pip broken by upgrade 
-   # pip3 install --upgrade pip
    pip3 install dumper gffutils
-   echo "*** No, don't upgrade pip, it breaks (note added by ts24, 2018-06-19)"
+   pip3 install --upgrade pip
    ln -s /vagrant ./GFFMunger
   SHELL
 end

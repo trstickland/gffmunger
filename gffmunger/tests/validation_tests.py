@@ -8,10 +8,12 @@ test_modules_dir  = os.path.dirname(   os.path.realpath( __file__ ) )
 data_dir          = os.path.join(      test_modules_dir, 'data' )
 test_gff_file     = os.path.join(      data_dir,         'SAMPLE.gff3.gz' )
 bad_gff_file      = os.path.join(      data_dir,         'NOT_GFF.gff3' )
+test_fasta_file   = os.path.join(      data_dir,         'SAMPLE.fasta.gz' )
+bad_fasta_file    = os.path.join(      data_dir,         'NOT_FASTA.fasta' )
 
 gt_test_arg = '-help' # something guaranteed to be OK with any working install of genometools
 
-class GFF3Validator_Tests(unittest.TestCase):
+class Validator_Tests(unittest.TestCase):
    
    @classmethod
    def setUpClass(self):
@@ -25,10 +27,18 @@ class GFF3Validator_Tests(unittest.TestCase):
          print(cp.stdout)
       self.assertTrue(success)
       
-   def test_010_gt_valid_passes(self):
-      """check genometools passes a valid GFF3 file"""
+   def test_010_gt_valid_gff_passes(self):
+      """check GFFMunger.validate_GFF3 passes a valid GFF3 file"""
       self.assertTrue( self.gffmunger.validate_GFF3(test_gff_file) )
 
-   def test_020_gt_invalid_fails(self):
-      """check genometools fails an invalid GFF3 file"""
+   def test_020_gt_invalid_gff_fails(self):
+      """check GFFMunger.validate_GFF3 fails an invalid GFF3 file"""
       self.assertFalse( self.gffmunger.validate_GFF3(bad_gff_file, silent=True) ) # silence validation errors, which are expected
+
+   def test_030_gt_valid_fasta_passes(self):
+      """check GFFMunger.validate_FASTA passes a valid FASTA file"""
+      self.assertTrue( self.gffmunger.validate_FASTA(test_fasta_file) )
+
+   def test_040_gt_invalid_fasta_fails(self):
+      """check GFFMunger.validate_FASTA fails an invalid FASTA file"""
+      self.assertFalse( self.gffmunger.validate_FASTA(bad_fasta_file, silent=True) ) # silence validation errors, which are expected

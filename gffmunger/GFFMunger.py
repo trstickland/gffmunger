@@ -1,10 +1,14 @@
 import argparse
+import gzip
 import logging
 import os
+import re
 import subprocess
 import sys
 import time
 import yaml
+
+from Bio import SeqIO
 
 class GFFMunger:
    def __init__(self,options):
@@ -56,3 +60,16 @@ class GFFMunger:
          print(cp.stderr)
       return False
    
+   def validate_FASTA(self, fasta_filename, silent=False): 
+      """Validates FASTA file.
+      Pass path of FASTA file; if valid, True is returned; if invalid, validator STDERR output is printed and False is returned
+      Validator errors are printed to STDOUT; these can be supressed by passing the optional flag 'silent'"""
+      if re.match(r'.*\.gz$', fasta_filename):
+         handle = gzip.open(fasta_filename, "rt")
+      else:
+         handle = open(fasta_filename, "r")
+      fasta = SeqIO.parse(handle, "fasta")
+      is_fasta = any(fasta)  # False when `fasta` is empty, i.e. wasn't a FASTA file
+      if not is_fasta:
+         handle.close()
+      return(is_fasta)

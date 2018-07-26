@@ -107,6 +107,12 @@ ENV/
 # mypy
 .mypy_cache/
 
+# sqlite db files
+*.db
+
 # vagrant runtime stuff
 .vagrant
 ubuntu-*-cloudimg-console.log
+
+# ts24-specific
+ts24_notes.md

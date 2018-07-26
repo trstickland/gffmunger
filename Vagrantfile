@@ -65,7 +65,11 @@ Vagrant.configure("2") do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
    apt-get update -qq
-   apt-get install -y git python3 python3-setuptools python3-biopython python3-pip
+   apt-get install -y genometools
+   apt-get install -y git python3 python-setuptools python3-biopython python3-pip
+   pip3 install dumper gffutils
+   pip3 install --upgrade pip
    ln -s /vagrant ./GFFMunger
   SHELL
 end
+

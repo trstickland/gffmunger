@@ -88,7 +88,10 @@ class GFF_Tests(unittest.TestCase):
       """test separation of GFF3 file without FASTA, into metadata and features """
       self.gffmunger.extract_GFF3_components(test_gff_file)    
       self.assertIsNotNone(self.gffmunger.input_metadata)
-      self.assertIsNotNone(self.gffmunger.input_features)
+      if self.gffmunger.read_features_to_buffer:
+         self.assertIsNotNone(self.gffmunger.input_features)
+      else:
+         self.assertIsNone(self.gffmunger.input_features)
       self.assertIsNone(self.gffmunger.input_fasta)
 
    def test_045_gff_components_with_fasta(self):

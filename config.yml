@@ -1,4 +1,6 @@
 gt_path                 : '/usr/bin/gt'
 gff3_validator_tool     : 'gff3validator'
 gff3_validation_timeout : 60
-
+gffutils_db_filename    : 'gffutils.<uid>.db'
+temp_input_file         : '/tmp/gffmunger_input.<uid>.gff3'
+read_features_to_buffer : False

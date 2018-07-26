@@ -3,12 +3,16 @@ import os
 import gffutils
 import warnings
 
-test_modules_dir  = os.path.dirname(   os.path.realpath( __file__ ) )
-data_dir          = os.path.join(      test_modules_dir, 'data' )
-test_gff_file     = os.path.join(      data_dir,         'SAMPLE.gff3.gz' )
-test_gff_db_file  = os.path.join(      data_dir,         'gffutils_test.db' )
+from gffmunger.GFFMunger import GFFMunger
 
-sample_gff_gene_id      = 'PF3D7_0100100'
+test_modules_dir        = os.path.dirname(   os.path.realpath( __file__ ) )
+data_dir                = os.path.join(      test_modules_dir, 'data' )
+test_gff_file           = os.path.join(      data_dir,         'SMALL_SAMPLE.gff3.gz' )                  # must be valid GFF3 with *no* FASTA
+test_gff_and_fasta_file = os.path.join(      data_dir,         'SMALL_SAMPLE_INCL_FASTA.gff3.gz' ) # must be valid GFF3 with FASTA
+test_gff_db_file        = os.path.join(      data_dir,         'gffutils_test.db' )
+
+#sample_gff_gene_id      = 'PF3D7_0100100' # use with SAMPLE.gff3
+sample_gff_gene_id      = '13J3.01' # use with SMALL_SAMPLE.gff3
 sample_gff_featuretypes = ['gene', 'mRNA', 'CDS', 'polypeptide'] 
 
 expected_db_class          = gffutils.FeatureDB
@@ -35,6 +39,7 @@ class GFF_Tests(unittest.TestCase):
                                                 )
          if(self.test_gff_db is not None and isinstance(self.test_gff_db, expected_db_class)):
             self.db_available = True
+      self.gffmunger = GFFMunger(None)
 
                         
    def test_000_db_created(self):
@@ -63,7 +68,6 @@ class GFF_Tests(unittest.TestCase):
             self.assertIsInstance(this_feature, expected_feature_class)
             # print(this_feature)
 
-
    def test_030_gffutils_find_attributes(self):
       """test that gffutils can find attributes in GFF"""
       if (not self.db_available):
@@ -80,5 +84,14 @@ class GFF_Tests(unittest.TestCase):
                self.assertIsNotNone(this_item)
                #print('{this_item[0]}: {this_item[1]}'.format(this_item=this_item))
             
-            
-       
+   def test_040_gff_components_no_fasta(self):
+      """test separation of GFF3 file without FASTA, into metadata and features """
+      self.gffmunger.extract_GFF3_components(test_gff_file)    
+      self.assertIsNotNone(self.gffmunger.input_metadata)
+      self.assertIsNotNone(self.gffmunger.input_features)
+      self.assertIsNone(self.gffmunger.input_fasta)
+
+   def test_045_gff_components_with_fasta(self):
+      """test separation of GFF3 file with FASTA, into metadata, features and FASTA data"""
+      self.gffmunger.extract_GFF3_components(test_gff_and_fasta_file)    
+      self.assertIsNotNone(self.gffmunger.input_fasta)

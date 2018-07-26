@@ -2,7 +2,6 @@ import argparse
 import gzip
 import logging
 import os
-import re
 import subprocess
 import sys
 import time
@@ -32,7 +31,7 @@ class GFFMunger:
       self.config = yaml.load(config_fh)
       self.gt_path                  = self.config['gt_path']
       self.gff3_validator_tool      = self.config['gff3_validator_tool']
-      self.gff3_valiation_timeout   = self.config['gff3_valiation_timeout']
+      self.gff3_valiation_timeout   = self.config['gff3_validation_timeout']
       config_fh.close()
 
       if self.output_file and os.path.exists(self.output_file):
@@ -46,6 +45,14 @@ class GFFMunger:
          
    def run(self):
       print(__name__+".run() was called")
+      
+   def open_text_file(self, filename):
+      """Opens a possibly gzipped file for reading as text, returns handle"""
+      if filename.endswith('.gz'):
+         handle = gzip.open(filename, "rt")
+      else:
+         handle = open(filename, "r")
+      return(handle)
 
    def validate_GFF3(self, gff_filename, silent=False): 
       """Validates GFF3 file.
@@ -63,13 +70,10 @@ class GFFMunger:
    def validate_FASTA(self, fasta_filename, silent=False): 
       """Validates FASTA file.
       Pass path of FASTA file; if valid, True is returned; if invalid, validator STDERR output is printed and False is returned
-      Validator errors are printed to STDOUT; these can be supressed by passing the optional flag 'silent'"""
-      if re.match(r'.*\.gz$', fasta_filename):
-         handle = gzip.open(fasta_filename, "rt")
-      else:
-         handle = open(fasta_filename, "r")
-      fasta = SeqIO.parse(handle, "fasta")
-      is_fasta = any(fasta)  # False when `fasta` is empty, i.e. wasn't a FASTA file
-      if not is_fasta:
-         handle.close()
+      Validation failure message printed to STDOUT; this can be supressed by passing the optional flag 'silent'"""
+      with self.open_text_file(fasta_filename) as handle:
+         fasta = SeqIO.parse(handle, "fasta")
+         is_fasta = any(fasta)   # False when `fasta` is empty, i.e. wasn't a FASTA file
+         if not is_fasta and not silent:
+            print(fasta_filename+" is not a valid FASTA file")
       return(is_fasta)

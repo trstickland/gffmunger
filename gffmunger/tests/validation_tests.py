@@ -6,9 +6,9 @@ from gffmunger.GFFMunger import GFFMunger
 
 test_modules_dir  = os.path.dirname(   os.path.realpath( __file__ ) )
 data_dir          = os.path.join(      test_modules_dir, 'data' )
-test_gff_file     = os.path.join(      data_dir,         'SAMPLE.gff3.gz' )
+test_gff_file     = os.path.join(      data_dir,         'SMALL_SAMPLE.gff3.gz' )
 bad_gff_file      = os.path.join(      data_dir,         'NOT_GFF.gff3' )
-test_fasta_file   = os.path.join(      data_dir,         'SAMPLE.fasta.gz' )
+test_fasta_file   = os.path.join(      data_dir,         'SMALL_SAMPLE.fasta.gz' )
 bad_fasta_file    = os.path.join(      data_dir,         'NOT_FASTA.fasta' )
 
 gt_test_arg = '-help' # something guaranteed to be OK with any working install of genometools

@@ -1,4 +1,4 @@
 gt_path                 : '/usr/bin/gt'
 gff3_validator_tool     : 'gff3validator'
-gff3_valiation_timeout  : 60
+gff3_validation_timeout : 60
 

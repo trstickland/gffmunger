@@ -54,7 +54,9 @@ class GFFMunger:
          if not os.path.exists(self.input_file_arg):
             self.logger.error("Input file does not exist: "+ self.input_file_arg)
             sys.exit(1)
-      else: #reading from STDIN, but gffutils requires file to parse => create unique temp filename
+      #reading from STDIN, but to avoid reading all the data into memory, we need a file to give to gffutils to parse
+      #=> create unique temp filename to use an an input buffer
+      else:
          self.logger.debug("Reading GFF3 input from STDIN")
          self.temp_input_file = str(self.config['temp_input_file']).replace('<uid>',uuid.uuid4().hex)
          self.logger.debug("Temporary input buffer will be "+ self.temp_input_file)
@@ -124,7 +126,7 @@ class GFFMunger:
    def get_gff3_source(self):
       """Returns name of GFF3 input file for gffutils.
       This may, trivially, return the input file name parameter.
-      When input comes from STDIN, this is written to a unique temporary file, and the name of that file is returned
+      When input comes from STDIN, this is written to temporary file, and the name of that file is returned
       (but can safely be called more than once; won't attempt to re-read STDIN)"""
       
       # if called previously, self.gff3_input_filename will be defined, so it can be returned
@@ -232,26 +234,30 @@ class GFFMunger:
             if buf is None:
                return(new)
             return(buf + new)
+         found_first_feature=False
+         found_first_fasta=False
          for line in f:
             linenum += 1
-            is_metadata = line.startswith('##')
-            if is_metadata and self.input_features is None:
-               # line looks like metadata, and haven't read any feature lines yet
-               # => add to metadata
+            is_comment = line.startswith('#')
+            if is_comment and not found_first_feature:
+               # all comments prior to first feature line are assumed to be metadata
+               # (or, at least, something to be preserved in the file header)
+               # => add to metadata buffer
                self.input_metadata = append(line, self.input_metadata)
-            elif is_metadata and self.input_features is not None:
-               # line looks like metadata, but we *have* read feature feature line(s)
-               # => treat as a comment, and add to features buffer
+            elif is_comment and found_first_feature and not found_first_fasta:
+               # this is a comment within the features, i.e. not metadata
+               if self.read_features_to_buffer:
+                  # if features are being stored as-read in a buffer, the comments should be added too
+                  self.input_features = append(line, self.input_features)
+            elif not is_comment and not found_first_fasta and not line.startswith('>'):
+               # everything that isn't a comment, and occurs vefore the first FASTA line, is a feature
+               # => this is a feature
+               found_first_feature = True
                if self.read_features_to_buffer:
                   self.input_features = append(line, self.input_features)
-            elif not is_metadata and not line.startswith('>') and self.input_fasta is None:
-               # not metadata, and haven't read and FASTA yet
-               # => add to features
-               if self.read_features_to_buffer:
-                  self.input_features = append(line, self.input_features)
-            # first line of FASTA, or any subsequent line
-            # => add to fasta
-            elif line.startswith('>') or self.input_fasta is not None:
+            elif found_first_fasta or line.startswith('>'):
+               # first line of FASTA, or any subsequent line
+               found_first_fasta=True
                self.input_fasta = append(line, self.input_fasta)
             else:
                raise ValueError("Unexpected content in line {linenum} in GFF3:\n{line}")
@@ -266,6 +272,9 @@ class GFFMunger:
       Features are written from the gffutils database, so will refect whatever munging
       was done via the gffutils API
       """
+      if self.test_gff_db is None:
+         raise("Must import some GFF3 data before exporting")
+      
       if self.output_file is not None:
          self.logger.debug("Exporting GFF3 to file "+ self.output_file)
          handle = open(self.output_file, "wt")
@@ -274,12 +283,11 @@ class GFFMunger:
          handle = sys.stdout
 
       handle.write( self.input_metadata )
-
-      ############# TEMPORARY ##############
-      if self.read_features_to_buffer:
-         handle.write( self.input_features )
-      ######################################   
-      
+      num_features_written=0
+      for this_feature in self.test_gff_db.all_features():
+         num_features_written+=1
+         handle.write( str(this_feature)+"\n" )
+      self.logger.debug("extracted and wrote "+str(num_features_written)+" features from gffutils db")
       if self.input_fasta is not None:
          handle.write( self.input_fasta )
          

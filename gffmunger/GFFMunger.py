@@ -69,19 +69,25 @@ class GFFMunger:
             sys.exit(1)
       else:
          self.logger.debug("Writing output to STDOUT")
-               
-
+      
 
             
    def run(self):
-      self.get_gff3_source() # sets self.gff3_input_filename
-      self.validate_GFF3(self.gff3_input_filename)
-      self.import_gff3(self.gff3_input_filename)
-      self.extract_GFF3_components(self.gff3_input_filename)
-      
-      self.export_gff3()
-      
-      # clean up
+      try:
+         self.get_gff3_source() # sets self.gff3_input_filename
+         self.validate_GFF3(self.gff3_input_filename)
+         self.import_gff3(self.gff3_input_filename)
+         self.extract_GFF3_components(self.gff3_input_filename)
+         
+         self.export_gff3()
+      except:
+         self.clean_up()
+         raise
+      self.clean_up()
+
+               
+
+   def clean_up(self):
       if self.temp_input_file and os.path.exists(self.temp_input_file):
          self.logger.debug("Deleting temporary input buffer "+ self.temp_input_file)
          os.remove(self.temp_input_file)
@@ -270,8 +276,8 @@ class GFFMunger:
       handle.write( self.input_metadata )
 
       ############# TEMPORARY ##############
-      #if self.read_features_to_buffer:
-      handle.write( self.input_features )
+      if self.read_features_to_buffer:
+         handle.write( self.input_features )
       ######################################   
       
       if self.input_fasta is not None:

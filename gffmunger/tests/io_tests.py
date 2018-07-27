@@ -21,11 +21,18 @@ class IO_Tests(unittest.TestCase):
       parser.add_argument( '--input_file',      '-i', help = 'Input file [STDIN]')
       parser.add_argument( '--output_file',     '-o', help = 'Output file [STDOUT]')
       parser.add_argument( '--config',          '-c', help = 'Config file [%(default)s]', default = 'config.yml')
+      self.output_file = __file__+'.'+uuid.uuid4().hex+'.gff3'
       self.gffmunger = GFFMunger(parser.parse_args([  '--input_file',   test_gff_file,
-                                                      '--output_file',  __file__+'.'+uuid.uuid4().hex+'.gff3',
+                                                      '--output_file',  self.output_file,
                                                       ]
                                                    )
                                  )
+
+   @classmethod
+   def tearDownClass(self):
+      if self.output_file and os.path.exists(self.output_file):
+         os.remove(self.output_file)      
+
      
    def test_000_gff3_input(self):
       """check functions for retreiving input filename, and reading and validating the file"""
@@ -35,7 +42,7 @@ class IO_Tests(unittest.TestCase):
       self.assertEqual(self.gffmunger.gffutils_db_filename, self.gffmunger.import_gff3(test_gff_file))
       self.assertEqual(expected_num_input_lines,            self.gffmunger.extract_GFF3_components())
       self.assertEqual(expected_num_input_lines,            self.gffmunger.extract_GFF3_components(test_gff_file))
-      
+
    def test_010_gff3_output(self):
       """checks functions for exporting GFF3 to a file"""
       self.assertIsNotNone(self.gffmunger.output_file)

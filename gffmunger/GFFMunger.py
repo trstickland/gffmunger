@@ -268,8 +268,12 @@ class GFFMunger:
          handle = sys.stdout
 
       handle.write( self.input_metadata )
-      # ########### TEMPORARY #############
-      #handle.write( self.input_features )
+
+      ############# TEMPORARY ##############
+      #if self.read_features_to_buffer:
+      handle.write( self.input_features )
+      ######################################   
+      
       if self.input_fasta is not None:
          handle.write( self.input_fasta )
          

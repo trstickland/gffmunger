@@ -15,19 +15,22 @@ from Bio import SeqIO
 class GFFMunger:
    
    def __init__(self,options):
-      # allow class to be constructed without options being defined
-      # intended for example to permit tests, not recommended for normal usage, for which the 'gffmunger' script is provided
+      # CLI options
       if None == options:
+         # passing None allow class to be constructed without options being defined; intended for example to permit tests
+         # *not* recommended for normal usage, for which the 'gffmunger' script is provided
          self.verbose         = False
          self.input_file_arg  = '/dev/zero'
          self.output_file     = 'no_such_file'
          self.config_file     = 'config.yml'
       else:
+         # this should be the normal case
          self.verbose         = options.verbose
          self.input_file_arg  = options.input_file
          self.output_file     = options.output_file
          self.config_file     = options.config
                
+      # set up logger
       self.logger = logging.getLogger(__name__)
       if self.verbose:
          self.logger.setLevel(logging.DEBUG)
@@ -35,18 +38,27 @@ class GFFMunger:
       else:
          self.logger.setLevel(logging.ERROR)
       
-      
+      # options from configuration file
       config_fh = open( os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.config_file),
                         'r'
                         );
       self.config = yaml.load(config_fh)
-      self.gt_path                  = self.config['gt_path']
-      self.gff3_validator_tool      = self.config['gff3_validator_tool']
-      self.gff3_valiation_timeout   = self.config['gff3_validation_timeout']
-      self.gffutils_db_filename     = str(self.config['gffutils_db_filename']).replace('<uid>',uuid.uuid4().hex)
-      self.read_features_to_buffer  = str(self.config['read_features_to_buffer']).lower() == 'true'
-            
+      def config_value_is_true(config_value):
+         return( str(config_value).lower() == 'true' )
+      try:
+         self.keep_attr_value_order       = config_value_is_true(self.config['keep_attr_value_order'])
+         self.attr_not_transferred        = self.config['attr_not_transferred']
+         self.output_feature_sort         = self.config['output_feature_sort']
+         self.gt_path                     = self.config['gt_path']
+         self.gff3_validator_tool         = self.config['gff3_validator_tool']
+         self.gff3_valiation_timeout      = self.config['gff3_validation_timeout']
+         self.gffutils_db_filename        = str(self.config['gffutils_db_filename']).replace('<uid>',uuid.uuid4().hex)
+         self.read_features_to_buffer     = config_value_is_true(self.config['read_features_to_buffer'])
+      except KeyError as e:
+         self.logger.error("required parameter "+str(e)+" missing from configuration in "+self.config_file)
+         raise
       config_fh.close()
+      
       self.logger.debug("Using genometools "+self.gt_path+" for validation with the tool "+self.gff3_validator_tool+" (timeout "+str(self.gff3_valiation_timeout)+")")
 
       if self.input_file_arg:
@@ -80,9 +92,9 @@ class GFFMunger:
          self.validate_GFF3(self.gff3_input_filename)
          self.import_gff3(self.gff3_input_filename)
          self.extract_GFF3_components(self.gff3_input_filename)
-         
+         self.move_annotations()
          self.export_gff3()
-      except:
+      except Exception:
          self.clean_up()
          raise
       self.clean_up()
@@ -96,6 +108,9 @@ class GFFMunger:
       if self.gffutils_db_filename and os.path.exists(self.gffutils_db_filename):
          self.logger.debug("Deleting gffutils database file "+ self.gffutils_db_filename)
          os.remove(self.gffutils_db_filename)
+         db_backup_filename = self.gffutils_db_filename+".bak"
+         if os.path.exists(db_backup_filename):
+            os.remove(db_backup_filename)
 
 
 
@@ -113,7 +128,7 @@ class GFFMunger:
       """Generator to read from a file handle by block. Tries to use stat to figure out system blocksize, defaults to 4096"""
       try:
          blocksize = os.stat(__file__).st_blksize
-      except:
+      except Exception:
          blocksize = 4096
       while True:
          data = handle.read(blocksize)
@@ -133,7 +148,7 @@ class GFFMunger:
       try:
          self.gff3_input_filename
       # otherwise, assume this is the first call...
-      except:
+      except Exception:
          if self.input_file_arg:
             # given file name as parameter => use that
             self.gff3_input_filename = self.input_file_arg
@@ -194,11 +209,11 @@ class GFFMunger:
             warnings.filterwarnings("ignore", "unclosed file <_io\.TextIOWrapper",  ResourceWarning,           "gffutils", 133 )
             warnings.filterwarnings("ignore", "generator '_FileIterator\.",         PendingDeprecationWarning, "gffutils", 186 )
             warnings.filterwarnings("ignore", "unclosed file <_io\.TextIOWrapper",  ResourceWarning,           "gffutils", 668 )
-         self.test_gff_db = gffutils.create_db( gff_filename,
+         self.gffutils_db = gffutils.create_db( gff_filename,
                                                 dbfn                    = self.gffutils_db_filename,
                                                 force                   = True,     # overwrite previous testing db file
                                                 merge_strategy          = 'error',
-                                                keep_order              = False,    # True doesn't appear to maintain attribute order :-/  (and turning this off may be faster)
+                                                keep_order              = self.keep_attr_value_order,
                                                 sort_attribute_values   = False
                                                 )
       return(self.gffutils_db_filename)
@@ -266,13 +281,96 @@ class GFFMunger:
 
 
 
+   def move_annotations(self):
+      """moves annotations from the polypeptide feature to mRNA feature"""
+      num_polypeptide=0
+      # this list caches all modified Feature objects
+      # so they can be used to update the db after the gffutils_db.features_of_type iterator is finished
+      modified_feature_cache=[]
+      for this_polypeptide in self.gffutils_db.features_of_type('polypeptide'):
+         num_polypeptide+=1
+         
+         # ignore polypeptide, with warning, if 'Derives_from' is missing
+         # should be exception??
+         if not 'Derives_from' in this_polypeptide.attributes:
+            self.logger.warning("Ignoring polypeptide feature without a Derives_from attribute:\n"+str(this_polypeptide)+"\n")
+            continue
+         # get the Drives_from attribute (asserting presence of single Derives_from attribute)
+         for n,derives_from in enumerate(this_polypeptide.attributes.get('Derives_from')):
+            if n > 0:
+               raise("panicked on encountering a polypeptide with more than one 'Derives_from' attribute")
+         # ignore polypeptide in the relation isn't to an mRNA feature
+         if not derives_from.endswith('mRNA'):
+            self.logger.debug("Ignoring polypeptide feature that doesn't derive from mRNA feature")
+            continue
+         # get the parent feature (asserting presence of single parent)
+         for n,this_parent in enumerate(self.gffutils_db.parents(derives_from)):
+            if n > 0:
+               raise("panicked on encountering a polypeptide with more than one parent feature")
+         # get the related mRNA feature (asserting presence of single related mRNA)
+         for n,this_mRNA in enumerate(self.gffutils_db.children(this_parent,featuretype='mRNA')):
+            if n > 0:
+               raise("panicked on encountering a polypeptide with more than one related mRNA attribute")
+         # asssert ID attribute of the retrieved mRNA feature matches the Dervived_from attribute we started with
+         # get the ID attribute (asserting presence of single Derives_from attribute)
+         for n,mRNA_ID in enumerate(this_mRNA.attributes.get('ID')):
+            if n > 0:
+               raise("panicked on encountering an mRNA feature with more than one 'ID' attribute")
+         if not mRNA_ID == derives_from:
+            # self.logger.warning("Identifier mismatch:  mRNA with 'ID' attribute "+mRNA_ID+" was retreived for polypeptide with 'Derives_from' attribute "+derives_from)
+            raise("Identifier mismatch:  mRNA with 'ID' attribute "+mRNA_ID+" was retreived for polypeptide with 'Derives_from' attribute "+derives_from)
+         
+         # create new set of attributes for the mRNA feature
+         # these are a copy of those from the polypeptide (hence transferring annotations)...
+         self.logger.debug("copying annotations to mRNA feature "+this_mRNA.attributes.get('ID')[0])
+         new_mRNA_attributes = dict(this_polypeptide.attributes) # returns copy of this_polypeptide.attributes
+         # ...except those attributes that shouldn't be transferred
+         for not_copied in self.attr_not_transferred:
+            if not_copied in new_mRNA_attributes:
+               del new_mRNA_attributes[not_copied]
+            if not_copied in this_mRNA.attributes:
+               new_mRNA_attributes[not_copied] = this_mRNA.attributes.get(not_copied)
+         # assign new attributes to mRNA feature
+         this_mRNA.attributes = new_mRNA_attributes
+         # cache the ammended Feature object
+         modified_feature_cache.append(this_mRNA)
+         
+         # create new set of attributes for the polypeptide feature
+         self.logger.debug("removing annotations from polypeptide feature "+this_polypeptide.attributes.get('ID')[0])
+         new_polypeptide_attributes = {}
+         # copy attribites that aren't tarnsferred to the mRNA feature
+         for preserved_attribute in self.attr_not_transferred:
+            if preserved_attribute in this_polypeptide.attributes:
+               new_polypeptide_attributes[preserved_attribute] = this_polypeptide.attributes.get(preserved_attribute)
+         # assign the enw attribites to the polypeptide feature
+         this_polypeptide.attributes = new_polypeptide_attributes
+         # cache the ammended mRNA Feature object
+         modified_feature_cache.append(this_polypeptide)
+                  
+      self.logger.info("found "+str(num_polypeptide)+" polypeptide features")
+      
+      # remove the old versions of all the ammended features from the db
+      self.gffutils_db.delete( modified_feature_cache )
+      # insert the ammended features into the db
+      # (this wee generator exists only to allow the logging durijng iteratingh through the Feature objects;
+      # you could comment it out and just have gffutils.update() iterate over modified_feature_cache directly)
+      def iterate_over_modified_features(cache):
+         for this_feature in cache:
+            self.logger.debug("modifying "+this_feature.attributes.get('ID')[0]+" in gffutils db")
+            yield this_feature
+      self.gffutils_db.update( iterate_over_modified_features(modified_feature_cache) )
+
+      del modified_feature_cache # may be big
+
+
+
    def export_gff3(self):
       """Writes GFF3 to output file (if previously specified) or STDOUT
       Uses metadata and (if present) FASTA from the GFF3 input; these should be unalatered
       Features are written from the gffutils database, so will refect whatever munging
       was done via the gffutils API
       """
-      if self.test_gff_db is None:
+      if self.gffutils_db is None:
          raise("Must import some GFF3 data before exporting")
       
       if self.output_file is not None:
@@ -284,10 +382,10 @@ class GFFMunger:
 
       handle.write( self.input_metadata )
       num_features_written=0
-      for this_feature in self.test_gff_db.all_features():
+      for this_feature in self.gffutils_db.all_features(order_by=self.output_feature_sort):
          num_features_written+=1
          handle.write( str(this_feature)+"\n" )
-      self.logger.debug("extracted and wrote "+str(num_features_written)+" features from gffutils db")
+      self.logger.info("extracted and wrote "+str(num_features_written)+" features from gffutils db")
       if self.input_fasta is not None:
          handle.write( self.input_fasta )
          

@@ -21,6 +21,7 @@ class GFFMunger:
          # *not* recommended for normal usage, for which the 'gffmunger' script is provided
          self.verbose         = False
          self.novalidate      = False
+         self.force           = False
          self.input_file_arg  = '/dev/zero'
          self.output_file     = 'no_such_file'
          self.config_file     = 'config.yml'
@@ -28,6 +29,7 @@ class GFFMunger:
          # this should be the normal case
          self.verbose         = options.verbose
          self.novalidate      = options.no_validate
+         self.force           = options.force
          self.input_file_arg  = options.input_file
          self.output_file     = options.output_file
          self.config_file     = options.config
@@ -81,7 +83,7 @@ class GFFMunger:
             
       if self.output_file:
          self.logger.debug("Writing output to "+ self.output_file)
-         if os.path.exists(self.output_file):
+         if not self.force and os.path.exists(self.output_file):
             self.logger.error("The output file already exists, please choose another filename: "+ self.output_file)
             sys.exit(1)
       else:
@@ -98,6 +100,8 @@ class GFFMunger:
          self.extract_GFF3_components(self.gff3_input_filename)
          self.move_annotations()
          self.export_gff3()
+         if self.output_file is not None and not self.novalidate:
+            self.validate_GFF3(self.output_file)
       except Exception:
          self.clean_up()
          raise

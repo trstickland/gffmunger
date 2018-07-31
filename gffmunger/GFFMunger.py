@@ -392,36 +392,14 @@ class GFFMunger:
             derives_from_feature = this_child
       # assert one match
       if not 1 == num_matches:
-         raise AssertionError("a polypeptide Drives_from attribute must match the ID of exactly one sibling feature, found "+str(num_matches)+ " matches for "+derives_from)
+         # raise AssertionError("a polypeptide Drives_from attribute must match the ID of exactly one sibling feature, found "+str(num_matches)+ " matches for "+derives_from)
+         self.logger.warning("polypeptide "+num_polypeptide_ID+" apparently derives from "+str(num_matches)+" siblings (should be exactly one): cannot transfer its annotations")
+         return(None)
       
       # catch-all assertion ensuring we're returning a Feature
       if derives_from_feature is None:
          raise AssertionError("failed to find sibling feature matching polypeptide Drives_from "+derives_from+" of polypeptide "+polypeptide_ID)
       return(derives_from_feature)
-         
-            
-         
-            
-         
-      ## get the feature from which the polypeptide dervives (asserting presence of feature matching the Derives_from relation)
-      ##for n,derives_from_feature in enumerate(self.gffutils_db.children(this_parent,featuretype=derives_from_feature_type)):
-      #for n,derives_from_feature in enumerate(self.gffutils_db.children(this_parent)):
-         #if not derives_from_feature.attributes.get('ID')[0] == derives_from:
-            ## ignore unless the child has an ID matching the 'Derives_from' value we're looking for
-            #self.logger.warning("rejecting '"+derives_from_feature.attributes.get('ID')[0]+"'  !=  '"+derives_from+"'")
-            #continue
-         #if n > 0:
-            #raise AssertionError("a polypeptide can derive from only one feature")
-      ## asssert ID attribute of the retrieved feature matches the Dervived_from attribute we started with
-      ## get the ID attribute (asserting presence of single ID attribute)
-      #for n,derives_from_feature_ID in enumerate(derives_from_feature.attributes.get('ID')):
-         #if n > 0:
-            #raise AssertionError("a feature can have only one 'ID' attribute")
-      #if not derives_from_feature_ID == derives_from:
-         ##raise AssertionError("related feature 'ID' attribute ("+derives_from_feature_ID+" was retreived for polypeptide with mismatching 'Derives_from' attribute "+derives_from)
-         #raise AssertionError("Could not find a feature with an ID matching the polypeptide 'Derives_from' attribute "+derives_from+"\nparent is:\n"+str(this_parent))
-         #return(None)
-      #return(derives_from_feature)
 
 
 

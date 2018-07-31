@@ -100,13 +100,13 @@ class GFFMunger:
          raise
       self.clean_up()
 
-               
+
 
    def clean_up(self):
-      if self.temp_input_file and os.path.exists(self.temp_input_file):
+      if hasattr(self, 'temp_input_file') and self.temp_input_file and os.path.exists(self.temp_input_file):
          self.logger.debug("Deleting temporary input buffer "+ self.temp_input_file)
          os.remove(self.temp_input_file)
-      if self.gffutils_db_filename and os.path.exists(self.gffutils_db_filename):
+      if hasattr(self, 'gffutils_db_filename') and self.gffutils_db_filename and os.path.exists(self.gffutils_db_filename):
          self.logger.debug("Deleting gffutils database file "+ self.gffutils_db_filename)
          os.remove(self.gffutils_db_filename)
          db_backup_filename = self.gffutils_db_filename+".bak"

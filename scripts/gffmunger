@@ -21,15 +21,16 @@ parser = argparse.ArgumentParser(
 	description = 'A munger of GFF files.  Proper description to follow.',
 	usage = __file__+' [options]', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 #parser.add_argument('--foo', '-f', help='Example option foo', type=InputTypes.is_foo_valid )
-parser.add_argument('--verbose', '-v', action='store_true', help = 'Turn on debugging [%(default)s]', default = False)
-parser.add_argument('--version',       action='version',    version = str(version))
-parser.add_argument('--input_file',    '-i', help = 'Input file [STDIN]')
-parser.add_argument('--output_file',   '-o', help = 'Output file [STDOUT]')
-parser.add_argument('--config',        '-c', help = 'Config file [%(default)s]', default = 'config.yml')
+parser.add_argument('--verbose',       '-v',    action='store_true',    help = 'Turn on debugging [%(default)s]',             default = False)
+parser.add_argument('--version',                action='version',       version = str(version))
+parser.add_argument('--no-validate',   '-n',    action='store_true',    help = 'Do not validate the input GFF3 [%(default)s]', default = False)
+parser.add_argument('--input-file',    '-i',                            help = 'Input file [STDIN]')
+parser.add_argument('--output-file',   '-o',                            help = 'Output file [STDOUT]')
+parser.add_argument('--config',        '-c',                            help = 'Config file [%(default)s]',                   default = 'config.yml')
 
 options = parser.parse_args()
 
-thingy = GFFMunger(options)
-thingy.run()
+munger = GFFMunger(options)
+munger.run()
 
 

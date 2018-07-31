@@ -20,12 +20,14 @@ class GFFMunger:
          # passing None allow class to be constructed without options being defined; intended for example to permit tests
          # *not* recommended for normal usage, for which the 'gffmunger' script is provided
          self.verbose         = False
+         self.novalidate      = False
          self.input_file_arg  = '/dev/zero'
          self.output_file     = 'no_such_file'
          self.config_file     = 'config.yml'
       else:
          # this should be the normal case
          self.verbose         = options.verbose
+         self.novalidate      = options.no_validate
          self.input_file_arg  = options.input_file
          self.output_file     = options.output_file
          self.config_file     = options.config
@@ -90,7 +92,8 @@ class GFFMunger:
    def run(self):
       try:
          self.get_gff3_source() # sets self.gff3_input_filename
-         self.validate_GFF3(self.gff3_input_filename)
+         if not self.novalidate:
+            self.validate_GFF3(self.gff3_input_filename)
          self.import_gff3(self.gff3_input_filename)
          self.extract_GFF3_components(self.gff3_input_filename)
          self.move_annotations()

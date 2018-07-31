@@ -1,8 +1,8 @@
-import argparse
 import gffutils
 import gzip
 import logging
 import os
+import re
 import subprocess
 import sys
 import time
@@ -49,6 +49,7 @@ class GFFMunger:
          self.keep_attr_value_order       = config_value_is_true(self.config['keep_attr_value_order'])
          self.attr_not_transferred        = self.config['attr_not_transferred']
          self.output_feature_sort         = self.config['output_feature_sort']
+         self.only_transfer_anot_to_mRNA  = config_value_is_true(self.config['only_transfer_anot_to_mRNA'])
          self.gt_path                     = self.config['gt_path']
          self.gff3_validator_tool         = self.config['gff3_validator_tool']
          self.gff3_valiation_timeout      = self.config['gff3_validation_timeout']
@@ -282,7 +283,7 @@ class GFFMunger:
 
 
    def move_annotations(self):
-      """moves annotations from the polypeptide feature to mRNA feature"""
+      """moves annotations from the polypeptide feature to the feature from which it derives (e.g. mRNA)"""
       num_polypeptide=0
       # this list caches all modified Feature objects
       # so they can be used to update the db after the gffutils_db.features_of_type iterator is finished
@@ -290,61 +291,36 @@ class GFFMunger:
       for this_polypeptide in self.gffutils_db.features_of_type('polypeptide'):
          num_polypeptide+=1
          
-         # ignore polypeptide, with warning, if 'Derives_from' is missing
-         # should be exception??
-         if not 'Derives_from' in this_polypeptide.attributes:
-            self.logger.warning("Ignoring polypeptide feature without a Derives_from attribute:\n"+str(this_polypeptide)+"\n")
+         this_derives_from_feature = self.get_derives_from_feature(this_polypeptide)
+         # return value of None indicates polypeptide shoukld be ignored, but it's safe to continue
+         if this_derives_from_feature is None:
             continue
-         # get the Drives_from attribute (asserting presence of single Derives_from attribute)
-         for n,derives_from in enumerate(this_polypeptide.attributes.get('Derives_from')):
-            if n > 0:
-               raise("panicked on encountering a polypeptide with more than one 'Derives_from' attribute")
-         # ignore polypeptide in the relation isn't to an mRNA feature
-         if not derives_from.endswith('mRNA'):
-            self.logger.debug("Ignoring polypeptide feature that doesn't derive from mRNA feature")
-            continue
-         # get the parent feature (asserting presence of single parent)
-         for n,this_parent in enumerate(self.gffutils_db.parents(derives_from)):
-            if n > 0:
-               raise("panicked on encountering a polypeptide with more than one parent feature")
-         # get the related mRNA feature (asserting presence of single related mRNA)
-         for n,this_mRNA in enumerate(self.gffutils_db.children(this_parent,featuretype='mRNA')):
-            if n > 0:
-               raise("panicked on encountering a polypeptide with more than one related mRNA attribute")
-         # asssert ID attribute of the retrieved mRNA feature matches the Dervived_from attribute we started with
-         # get the ID attribute (asserting presence of single Derives_from attribute)
-         for n,mRNA_ID in enumerate(this_mRNA.attributes.get('ID')):
-            if n > 0:
-               raise("panicked on encountering an mRNA feature with more than one 'ID' attribute")
-         if not mRNA_ID == derives_from:
-            # self.logger.warning("Identifier mismatch:  mRNA with 'ID' attribute "+mRNA_ID+" was retreived for polypeptide with 'Derives_from' attribute "+derives_from)
-            raise("Identifier mismatch:  mRNA with 'ID' attribute "+mRNA_ID+" was retreived for polypeptide with 'Derives_from' attribute "+derives_from)
          
-         # create new set of attributes for the mRNA feature
+         # create new set of attributes for the Derives_from feature
          # these are a copy of those from the polypeptide (hence transferring annotations)...
-         self.logger.debug("copying annotations to mRNA feature "+this_mRNA.attributes.get('ID')[0])
-         new_mRNA_attributes = dict(this_polypeptide.attributes) # returns copy of this_polypeptide.attributes
+         self.logger.debug("copying annotations to feature from which polypeptide derives "+this_derives_from_feature.attributes.get('ID')[0])
+         new_derives_from_feature_attributes = dict(this_polypeptide.attributes) # returns copy of this_polypeptide.attributes
          # ...except those attributes that shouldn't be transferred
          for not_copied in self.attr_not_transferred:
-            if not_copied in new_mRNA_attributes:
-               del new_mRNA_attributes[not_copied]
-            if not_copied in this_mRNA.attributes:
-               new_mRNA_attributes[not_copied] = this_mRNA.attributes.get(not_copied)
-         # assign new attributes to mRNA feature
-         this_mRNA.attributes = new_mRNA_attributes
+            if not_copied in new_derives_from_feature_attributes:
+               del new_derives_from_feature_attributes[not_copied]
+            if not_copied in this_derives_from_feature.attributes:
+               new_derives_from_feature_attributes[not_copied] = this_derives_from_feature.attributes.get(not_copied)
+         # assign new attributes to Derives_from feature
+         this_derives_from_feature.attributes = new_derives_from_feature_attributes
          # cache the ammended Feature object
-         modified_feature_cache.append(this_mRNA)
+         modified_feature_cache.append(this_derives_from_feature)
          
          # create new set of attributes for the polypeptide feature
          self.logger.debug("removing annotations from polypeptide feature "+this_polypeptide.attributes.get('ID')[0])
          new_polypeptide_attributes = {}
-         # copy attribites that aren't tarnsferred to the mRNA feature
+         # make a copy of all attributes that aren't to be transferred to the Derives_from feature
          for preserved_attribute in self.attr_not_transferred:
             if preserved_attribute in this_polypeptide.attributes:
                new_polypeptide_attributes[preserved_attribute] = this_polypeptide.attributes.get(preserved_attribute)
-         # assign the enw attribites to the polypeptide feature
+         # assign the new attribites to the polypeptide feature
          this_polypeptide.attributes = new_polypeptide_attributes
-         # cache the ammended mRNA Feature object
+         # cache the ammended polypeptide Feature object
          modified_feature_cache.append(this_polypeptide)
                   
       self.logger.info("found "+str(num_polypeptide)+" polypeptide features")
@@ -352,15 +328,61 @@ class GFFMunger:
       # remove the old versions of all the ammended features from the db
       self.gffutils_db.delete( modified_feature_cache )
       # insert the ammended features into the db
-      # (this wee generator exists only to allow the logging durijng iteratingh through the Feature objects;
-      # you could comment it out and just have gffutils.update() iterate over modified_feature_cache directly)
-      def iterate_over_modified_features(cache):
-         for this_feature in cache:
-            self.logger.debug("modifying "+this_feature.attributes.get('ID')[0]+" in gffutils db")
-            yield this_feature
-      self.gffutils_db.update( iterate_over_modified_features(modified_feature_cache) )
+      ## (this wee generator exists only to allow the logging whilst iterating through the Feature objects)
+      #def iterate_over_modified_features(cache):
+         #for this_feature in cache:
+            #self.logger.debug("modifying "+this_feature.attributes.get('ID')[0]+" in gffutils db")
+            #yield this_feature
+      #self.gffutils_db.update( iterate_over_modified_features(modified_feature_cache) )
+      self.gffutils_db.update( modified_feature_cache )
 
       del modified_feature_cache # may be big
+
+
+
+   # N.B. this must only return None to indicate when polypeptide should be ignored, but it's safe to continue;
+   # raise an exception when there's an error that can't be ignored
+   def get_derives_from_feature(self, polypeptide_feature):
+      """Pass a gffutils.Feature object representing a polypeptide
+      Returns the gffutils.Feature object representing the feature from which the polypeptide
+      derives, as specified by the Derives_from attribute.
+      Returns None, with a logger warning, if the feature can't be identified for some reason
+      Only raises exception on encountering a something so unexpected that we can't safely continue."""
+      # ignore polypeptide, with warning, if 'Derives_from' is missing
+      if not 'Derives_from' in polypeptide_feature.attributes:
+         self.logger.warning("Ignoring polypeptide feature without a Derives_from attribute:\n"+str(polypeptide_feature)+"\n")
+         return(None)
+      # get the Drives_from attribute (asserting presence of single Derives_from attribute)
+      for n,derives_from in enumerate(polypeptide_feature.attributes.get('Derives_from')):
+         if n > 0:
+            raise("panicked on encountering a polypeptide with more than one 'Derives_from' attribute")
+      # ignore polypeptide in the relation isn't to an mRNA feature
+      if self.only_transfer_anot_to_mRNA and not derives_from.endswith('mRNA'):
+         self.logger.debug("Ignoring polypeptide feature that doesn't derive from mRNA feature")
+         return(None)
+      # get type of feature from which the polypeptide derives
+      try:
+         derives_from_feature_type = re.search(':([^:]+?)$', derives_from).group(1)
+      except AttributeError:
+         self.logger.error("Could not extract feature type from Derives_from value "+derives_from)
+         raise
+      # get the parent feature (asserting presence of single parent)
+      for n,this_parent in enumerate(self.gffutils_db.parents(derives_from)):
+         if n > 0:
+            raise("panicked on encountering a polypeptide with more than one parent feature")
+      # get the feature from which the polypeptide dervives (asserting presence of feature matching the Derives_from relation)
+      for n,derives_from_feature in enumerate(self.gffutils_db.children(this_parent,featuretype=derives_from_feature_type)):
+         if n > 0:
+            raise("panicked on encountering a polypeptide which apparently derives from more than one feature")
+      # asssert ID attribute of the retrieved feature matches the Dervived_from attribute we started with
+      # get the ID attribute (asserting presence of single Derives_from attribute)
+      for n,derives_from_feature_ID in enumerate(derives_from_feature.attributes.get('ID')):
+         if n > 0:
+            raise("panicked on encountering a feature with more than one 'ID' attribute")
+      if not derives_from_feature_ID == derives_from:
+         # self.logger.warning("Identifier mismatch:  feature with 'ID' attribute "+derives_from_feature_ID+" was retreived for polypeptide with mismatching 'Derives_from' attribute "+derives_from)
+         raise("Identifier mismatch:  feature with 'ID' attribute "+derives_from_feature_ID+" was retreived for polypeptide with mismatching 'Derives_from' attribute "+derives_from)
+      return(derives_from_feature)
 
 
 

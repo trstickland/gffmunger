@@ -3,13 +3,14 @@
 # The options here are for whomsoever maintains a particular installation of the application
 
 
-# When attributes *values* are lists (e.g. a 'product' that has more than one 'term' within the value), gffutils will sort the list
-# this causes the list order to be preserved
-# (it does *not* affect the sorting of the attributes themselves)
+# When attributes *values* are lists (e.g. a 'product' that has more than one 'term' within the value),
+# gffutils will by default sort the list. Set this flag to true to preserve the original order.
+# (This does *not* affect the order of the attributes themselves)
 keep_attr_value_order   : True
 
-# By default, attributes are cut from the polypeptide feature and pasted to the related mRNA feature.
-# List here any attribites that should *not* be transferred, but should instead be left in the polypeptide feature
+# By default, attributes are cut from the polypeptide feature and pasted to the feature from which the polypeptide
+# derives (e.g. mRNA).
+# List here any attribites that should *not* be transferred, but should instead be left in the polypeptide feature.
 attr_not_transferred : 
                         - 'ID'
                         - 'Derives_from'
@@ -21,18 +22,23 @@ output_feature_sort  :
                         - 'seqid'
                         - 'start'
 
-# For use of genometools to validate GFF3 input
+# This flag can be used to restrict the transfer of annotations from polypeptides only to mRNA.
+# Set it to flase to transfer annotations from polypeptides to features of all types.
+# Expect that this will be False, but this flag exists because of a slight ambiguity in the spec.,
+# which makes it desirable to switch behaviour in a hurry ;-)
+only_transfer_anot_to_mRNA : False
+                        
+# For use of genometools to validate GFF3 input.
 gt_path                 : '/usr/bin/gt'
 gff3_validator_tool     : 'gff3validator'
 gff3_validation_timeout : 60
 
-# Working filenames; shouldn't need to edit these unless their location offends
+# Working filenames; shouldn't need to edit these unless their location offends.
 # A UUID is substituted for <uid> to avoid clashes if there are concurrent gffmunder processes.
 gffutils_db_filename : 'gffutils.<uid>.db'
 temp_input_file      : '/tmp/gffmunger_input.<uid>.gff3'
 
-# Causes features in the input GFF3 to be read into a read_features_to_buffer
-# currently Features are imported to and exported from gffutils so this should be False
-# but if you find a reason for storing "raw" Features in memory you can make this true
-# and the you'll see the necessary code is all still in place
+# Causes features in the input GFF3 to be read into a read_features_to_buffer.
+# currently Features are imported to and exported from gffutils so this should be False, but if you find a reason
+# for storing "raw" Features in memory you can make this true (you'll see the necessary code is all still in place)
 read_features_to_buffer : False

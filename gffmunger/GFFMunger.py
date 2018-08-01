@@ -23,6 +23,7 @@ class GFFMunger:
          self.quiet           = False
          self.novalidate      = False
          self.force           = False
+         self.fasta_file_arg  = None
          self.input_file_arg  = '/dev/zero'
          self.output_file     = 'no_such_file'
          self.config_file     = 'config.yml'
@@ -32,6 +33,7 @@ class GFFMunger:
          self.quiet           = options.quiet
          self.novalidate      = options.no_validate
          self.force           = options.force
+         self.fasta_file_arg  = options.fasta_file
          self.input_file_arg  = options.input_file
          self.output_file     = options.output_file
          self.config_file     = options.config
@@ -70,6 +72,12 @@ class GFFMunger:
       config_fh.close()
 
       self.logger.debug("Using genometools "+self.gt_path+" for validation with the tool "+self.gff3_validator_tool+" (timeout "+str(self.gff3_valiation_timeout)+")")
+
+      if self.fasta_file_arg:
+         self.logger.info("Reading FASTA from "+ self.fasta_file_arg)
+         if not os.path.exists(self.fasta_file_arg):
+            self.logger.critical("FASTA file does not exist: "+ self.fasta_file_arg)
+            sys.exit(1)
 
       if self.input_file_arg:
          self.logger.info("Reading GFF3 input from "+ self.input_file_arg)
@@ -234,7 +242,7 @@ class GFFMunger:
 
 
    def extract_GFF3_components(self, gff_filename=None):
-      """Optionally path of GFF3 file; otherwise this is retrieved using get_gff3_source()
+      """Optionally pass path of GFF3 file; otherwise this is retrieved using get_gff3_source()
       Extracts separate components from the GFF3 file:  metadata, features and FASTA
       Stores these as raw text buffers, as read from the file, unescaped
       - Metadata are lines at the beginning of the GFF3 starting '##'
@@ -248,7 +256,20 @@ class GFFMunger:
       comments), whereas it could /(?? check)/ be a problem in the FASTA.  Hope this doesn't confuse anyone."""
       if not gff_filename:
          gff_filename = self.get_gff3_source()
-      self.logger.debug("extracting metadata, features and (possibly) FASTA from GFF3 file "+ gff_filename)
+         
+      if self.fasta_file_arg:
+         if self.read_features_to_buffer:
+            self.logger.warning("extracting metadata and features (but not FASTA) from GFF3 file "+ gff_filename)
+            self.logger.debug("extracting metadata and features (but not FASTA) from GFF3 file "+ gff_filename)
+         else:
+            self.logger.warning("extracting metadata (only) from GFF3 file "+ gff_filename)
+            self.logger.debug("extracting metadata (only) from GFF3 file "+ gff_filename)
+      elif self.read_features_to_buffer:
+            self.logger.warning("extracting metadata, features and FASTA (if there is any) from GFF3 file "+ gff_filename)
+            self.logger.debug("extracting metadata, features and FASTA (if there is any) from GFF3 file "+ gff_filename)
+      else:
+            self.logger.warning("extracting metadata and FASTA (if there is any) from GFF3 file "+ gff_filename)
+            self.logger.debug("extracting metadata and FASTA (if there is any) from GFF3 file "+ gff_filename)
       
       self.input_metadata  = None
       self.input_features  = None
@@ -278,18 +299,29 @@ class GFFMunger:
                   # if features are being stored as-read in a buffer, the comments should be added too
                   self.input_features = append(line, self.input_features)
             elif not is_comment and not found_first_fasta and not line.startswith('>'):
-               # everything that isn't a comment, and occurs vefore the first FASTA line, is a feature
+               # everything that isn't a comment, and occurs before the first FASTA line, is a feature
                # => this is a feature
+               # if features aren't being read into a buffer, and the FASTA is being read from a separate file,
+               # we can bale out right here
+               if not self.read_features_to_buffer and self.fasta_file_arg:
+                  self.logger.debug("finished reading GFF3 file at the end of the metadata")
+                  return(linenum-1)
                found_first_feature = True
                if self.read_features_to_buffer:
                   self.input_features = append(line, self.input_features)
             elif found_first_fasta or line.startswith('>'):
                # first line of FASTA, or any subsequent line
+               # if the FASTA is being read from a separate file,
+               # we can bale out right here
+               if self.fasta_file_arg:
+                  self.logger.debug("finished reading GFF3 file at the end of the features")
+                  return(linenum-1)
                found_first_fasta=True
                self.input_fasta = append(line, self.input_fasta)
             else:
                raise ValueError("Unexpected content in line {linenum} in GFF3:\n{line}")
             
+      self.logger.debug("reached end of GFF3 file")
       return(linenum)
 
 

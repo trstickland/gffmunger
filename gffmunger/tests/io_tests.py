@@ -21,6 +21,7 @@ class IO_Tests(unittest.TestCase):
       #parser.add_argument('--version',                action='version',       version = str(version))
       parser.add_argument('--no-validate',   '-n',    action='store_true',    help = 'Do not validate the input GFF3 [%(default)s]',   default = False)
       parser.add_argument('--force',         '-f',    action='store_true',    help = 'Force writing of output file, even if it already exists [%(default)s]', default = False)
+      parser.add_argument('--fasta-file',    '-a',                            help = 'Read FASTA from separate file instead of GFF3 input')
       parser.add_argument('--input-file',    '-i',                            help = 'Input file [STDIN]')
       parser.add_argument('--output-file',   '-o',                            help = 'Output file [STDOUT]')
       parser.add_argument('--config',        '-c',                            help = 'Config file [%(default)s]',                      default = 'config.yml')

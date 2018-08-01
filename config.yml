@@ -21,6 +21,17 @@ attr_not_transferred :
 output_feature_sort  :
                         - 'seqid'
                         - 'start'
+                        
+# Features of these types are checked to see if anotations have been transferred to them.
+# If not, a warning is sent to the logger.
+# List of features that are expected to have annotation.
+# Warnings are logged in the event that
+# - an annotation is transferred to a feature of a type *not* in this list
+# - the output GFF3 contains a feature of a type in this list which
+#   did not have an annotation transferred to it from a polypeptide
+annotated_feature_types :  
+                           - 'mRNA'
+                           - 'pseudogenic_transcript'
 
 # This flag can be used to restrict the transfer of annotations from polypeptides only to mRNA.
 # Set it to flase to transfer annotations from polypeptides to features of all types.

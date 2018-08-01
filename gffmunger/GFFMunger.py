@@ -20,6 +20,7 @@ class GFFMunger:
          # passing None allow class to be constructed without options being defined; intended for example to permit tests
          # *not* recommended for normal usage, for which the 'gffmunger' script is provided
          self.verbose         = False
+         self.quiet           = False
          self.novalidate      = False
          self.force           = False
          self.input_file_arg  = '/dev/zero'
@@ -28,6 +29,7 @@ class GFFMunger:
       else:
          # this should be the normal case
          self.verbose         = options.verbose
+         self.quiet           = options.quiet
          self.novalidate      = options.no_validate
          self.force           = options.force
          self.input_file_arg  = options.input_file
@@ -37,10 +39,12 @@ class GFFMunger:
       # set up logger
       self.logger = logging.getLogger(__name__)
       if self.verbose:
-         self.logger.setLevel(logging.DEBUG)
-         self.logger.warning("logging seems to be broken at the moment, you'll only see warnings and errors :-/")
+         self.logger.setLevel(logging.INFO)
+         self.logger.warning("logging.debug & logging.info seem to be broken at the moment, you'll only see warnings & above :-/")
+      elif self.quiet:
+         self.logger.setLevel(logging.CRITICAL)
       else:
-         self.logger.setLevel(logging.ERROR)
+         self.logger.setLevel(logging.WARNING)
       
       # options from configuration file
       config_fh = open( os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.config_file),
@@ -53,6 +57,7 @@ class GFFMunger:
          self.keep_attr_value_order       = config_value_is_true(self.config['keep_attr_value_order'])
          self.attr_not_transferred        = self.config['attr_not_transferred']
          self.output_feature_sort         = self.config['output_feature_sort']
+         self.annotated_feature_types     = self.config['annotated_feature_types']
          self.only_transfer_anot_to_mRNA  = config_value_is_true(self.config['only_transfer_anot_to_mRNA'])
          self.gt_path                     = self.config['gt_path']
          self.gff3_validator_tool         = self.config['gff3_validator_tool']
@@ -60,31 +65,31 @@ class GFFMunger:
          self.gffutils_db_filename        = str(self.config['gffutils_db_filename']).replace('<uid>',uuid.uuid4().hex)
          self.read_features_to_buffer     = config_value_is_true(self.config['read_features_to_buffer'])
       except KeyError as e:
-         self.logger.error("required parameter "+str(e)+" missing from configuration in "+self.config_file)
+         self.logger.critical("required parameter "+str(e)+" missing from configuration in "+self.config_file)
          raise
       config_fh.close()
-      
+
       self.logger.debug("Using genometools "+self.gt_path+" for validation with the tool "+self.gff3_validator_tool+" (timeout "+str(self.gff3_valiation_timeout)+")")
 
       if self.input_file_arg:
-         self.logger.debug("Reading GFF3 input from "+ self.input_file_arg)
+         self.logger.info("Reading GFF3 input from "+ self.input_file_arg)
          if not os.path.exists(self.input_file_arg):
-            self.logger.error("Input file does not exist: "+ self.input_file_arg)
+            self.logger.critical("Input file does not exist: "+ self.input_file_arg)
             sys.exit(1)
       #reading from STDIN, but to avoid reading all the data into memory, we need a file to give to gffutils to parse
       #=> create unique temp filename to use an an input buffer
       else:
-         self.logger.debug("Reading GFF3 input from STDIN")
+         self.logger.info("Reading GFF3 input from STDIN")
          self.temp_input_file = str(self.config['temp_input_file']).replace('<uid>',uuid.uuid4().hex)
          self.logger.debug("Temporary input buffer will be "+ self.temp_input_file)
          if os.path.exists(self.temp_input_file):
-            self.logger.error("Something badly wrong :-/   Should have a unique filename for the temporary input buffer, but it already exists: "+ self.temp_input_file)
+            self.logger.critical("Something badly wrong :-/   Should have a unique filename for the temporary input buffer, but it already exists: "+ self.temp_input_file)
             sys.exit(1)
             
       if self.output_file:
-         self.logger.debug("Writing output to "+ self.output_file)
+         self.logger.info("Writing output to "+ self.output_file)
          if not self.force and os.path.exists(self.output_file):
-            self.logger.error("The output file already exists, please choose another filename: "+ self.output_file)
+            self.logger.critical("The output file already exists, please choose another filename: "+ self.output_file)
             sys.exit(1)
       else:
          self.logger.debug("Writing output to STDOUT")
@@ -180,7 +185,7 @@ class GFFMunger:
       """Validates GFF3 file.
       If valid, True is returned; if invalid, validator STDERR output is printed and False is returned
       Validator errors are printed to STDOUT; these can be supressed by passing the optional flag 'silent'"""
-      self.logger.debug("Validating GFF3 file "+ gff_filename)
+      self.logger.info("Validating GFF3 file "+ gff_filename)
       cp = subprocess.run( [self.gt_path, self.gff3_validator_tool, gff_filename],
                            timeout=self.gff3_valiation_timeout,
                            stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -196,7 +201,7 @@ class GFFMunger:
       """Validates FASTA file.
       Pass path of FASTA file; if valid, True is returned; if invalid, validator STDERR output is printed and False is returned
       Validation failure message printed to STDOUT; this can be supressed by passing the optional flag 'silent'"""
-      self.logger.debug("Validating FASTA file "+ fasta_filename)
+      self.logger.info("Validating FASTA file "+ fasta_filename)
       with self.open_text_file(fasta_filename) as handle:
          fasta = SeqIO.parse(handle, "fasta")
          is_fasta = any(fasta)   # False when `fasta` is empty, i.e. wasn't a FASTA file
@@ -243,7 +248,7 @@ class GFFMunger:
       comments), whereas it could /(?? check)/ be a problem in the FASTA.  Hope this doesn't confuse anyone."""
       if not gff_filename:
          gff_filename = self.get_gff3_source()
-      self.logger.debug("extracting metadta, features and (possibly) FASTA from GFF3 file "+ gff_filename)
+      self.logger.debug("extracting metadata, features and (possibly) FASTA from GFF3 file "+ gff_filename)
       
       self.input_metadata  = None
       self.input_features  = None
@@ -303,6 +308,14 @@ class GFFMunger:
          if this_derives_from_feature is None:
             continue
          
+         # log warning if the returned feature type is not one expected to be annotated
+         if not this_derives_from_feature.featuretype in self.annotated_feature_types:
+            self.logger.warning("Polypeptide %s described as derivant of %s which is an unexpected type: %s",
+                                str(this_polypeptide.attributes.get('ID')[0]),
+                                str(this_derives_from_feature.attributes.get('ID')[0]),
+                                this_derives_from_feature.featuretype,
+                                )
+         
          # create new set of attributes for the Derives_from feature
          # these are a copy of those from the polypeptide (hence transferring annotations)...
          self.logger.debug("copying annotations to feature from which polypeptide derives "+this_derives_from_feature.attributes.get('ID')[0])
@@ -332,6 +345,8 @@ class GFFMunger:
                   
       self.logger.info("found "+str(num_polypeptide)+" polypeptide features")
       
+      self.check_for_anotations(modified_feature_cache)
+      
       # remove the old versions of all the ammended features from the db
       self.gffutils_db.delete( modified_feature_cache )
       # insert the ammended features into the db
@@ -357,7 +372,7 @@ class GFFMunger:
       Only raises exception on encountering a something so unexpected that we can't safely continue."""
       # ignore polypeptide, with warning, if 'Derives_from' is missing
       if not 'Derives_from' in polypeptide_feature.attributes:
-         self.logger.warning("Ignoring polypeptide feature without a Derives_from attribute:\n"+str(polypeptide_feature)+"\n")
+         self.logger.error("Ignoring polypeptide feature without a Derives_from attribute:\n"+str(polypeptide_feature)+"\n")
          return(None)
       # get the polypeptide ID
       num_polypeptide_ID = 0
@@ -371,10 +386,12 @@ class GFFMunger:
          num_derives_from += 1
       if not 1 == num_derives_from:
          raise AssertionError("polypeptide must have exactly one 'Derives_from' attribute, found "+str(num_derives_from)+" in "+polypeptide_ID)
+         
       # ignore polypeptide in the relation isn't to an mRNA feature
       if self.only_transfer_anot_to_mRNA and not derives_from.endswith('mRNA'):
          self.logger.debug("Ignoring polypeptide feature that doesn't derive from mRNA feature")
          return(None)
+      
       # get the parent feature (asserting presence of single parent)
       num_parents = 0
       for this_parent in self.gffutils_db.parents(derives_from):
@@ -400,7 +417,7 @@ class GFFMunger:
       # assert one match
       if not 1 == num_matches:
          # raise AssertionError("a polypeptide Drives_from attribute must match the ID of exactly one sibling feature, found "+str(num_matches)+ " matches for "+derives_from)
-         self.logger.warning("polypeptide "+num_polypeptide_ID+" apparently derives from "+str(num_matches)+" siblings (should be exactly one): cannot transfer its annotations")
+         self.logger.error("polypeptide "+num_polypeptide_ID+" apparently derives from "+str(num_matches)+" siblings (should be exactly one): cannot transfer its annotations")
          return(None)
       
       # catch-all assertion ensuring we're returning a Feature
@@ -410,6 +427,20 @@ class GFFMunger:
 
 
 
+   def check_for_anotations(self, annotated_features):
+      """Checks that annotations have been transferred to features that should be annotated
+      Pass the list of newly annotated features.
+      Logs a warning for each feature without annotation, that should be annotated"""
+      annotated_feature_ids = []
+      for this_feature in annotated_features:
+         annotated_feature_ids.append( this_feature.attributes.get('ID')[0] )
+      for annotated_type in self.annotated_feature_types:
+         for this_feature in self.gffutils_db.features_of_type(annotated_type):
+            if not this_feature.attributes.get('ID')[0] in annotated_feature_ids:
+               self.logger.warning("Feature "+str(this_feature.attributes.get('ID')[0])+" ("+this_feature.featuretype+") has no annotation because no derivant polypeptide was found")
+   
+   
+   
    def export_gff3(self):
       """Writes GFF3 to output file (if previously specified) or STDOUT
       Uses metadata and (if present) FASTA from the GFF3 input; these should be unalatered

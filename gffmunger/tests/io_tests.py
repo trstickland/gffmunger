@@ -17,7 +17,8 @@ class IO_Tests(unittest.TestCase):
    def setUpClass(self):
       parser = argparse.ArgumentParser()
       parser.add_argument('--verbose',       '-v',    action='store_true',    help = 'Turn on debugging [%(default)s]',                default = False)
-      #parser.add_argument('--version',               action='version',       version = str(version))
+      parser.add_argument('--quiet',         '-q',    action='store_true',    help = 'Suppress all warnings [%(default)s]',            default = False)
+      #parser.add_argument('--version',                action='version',       version = str(version))
       parser.add_argument('--no-validate',   '-n',    action='store_true',    help = 'Do not validate the input GFF3 [%(default)s]',   default = False)
       parser.add_argument('--force',         '-f',    action='store_true',    help = 'Force writing of output file, even if it already exists [%(default)s]', default = False)
       parser.add_argument('--input-file',    '-i',                            help = 'Input file [STDIN]')

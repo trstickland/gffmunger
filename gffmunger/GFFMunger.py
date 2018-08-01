@@ -11,6 +11,7 @@ import warnings
 import yaml
 
 from Bio import SeqIO
+from pyfaidx import Fasta
 
 class GFFMunger:
    
@@ -106,15 +107,30 @@ class GFFMunger:
             
    def run(self):
       try:
-         self.get_gff3_source() # sets self.gff3_input_filename
+         # get GFF3 input, stdin or file; sets self.gff3_input_filename
+         self.get_gff3_source() 
+         # validate GFF3 if required
          if not self.novalidate:
             self.validate_GFF3(self.gff3_input_filename)
+         # import GFF3
          self.import_gff3(self.gff3_input_filename)
+         # if FASTA is being read from separate file...
+         if self.fasta_file_arg:
+            # ...validate if required...
+            if not self.novalidate:
+               self.validate_FASTA(self.fasta_file_arg)
+            # ...and import
+            self.import_fasta(self.fasta_file_arg)
+         # read GFF3 metadta (and poss. other bits) into text buffer(s)
          self.extract_GFF3_components(self.gff3_input_filename)
+         # transfer annotations from polypeptide features to the feature they derived from
          self.move_annotations()
+         # write new GFF3 to file or stdout
          self.export_gff3()
+         # if GFF3 file was written, validate it if required
          if self.output_file is not None and not self.novalidate:
             self.validate_GFF3(self.output_file)
+      # whack temporary files
       except Exception:
          self.clean_up()
          raise
@@ -241,6 +257,17 @@ class GFFMunger:
 
 
 
+   def import_fasta(self, fasta_filename=None):
+      """Optionally path of FASTA file; otherwise use self.fasta_file_arg
+      Imports FASTA from the file using pyfaidx.Fasta"""
+      if not fasta_filename:
+         fasta_filename = self.fasta_file_arg
+      self.logger.debug("Importing FASTA using pyfaidx.Fasta, from "+ fasta_filename)
+      self.faidx = Fasta(fasta_filename)
+      return(self.faidx)
+      
+      
+      
    def extract_GFF3_components(self, gff_filename=None):
       """Optionally pass path of GFF3 file; otherwise this is retrieved using get_gff3_source()
       Extracts separate components from the GFF3 file:  metadata, features and FASTA
@@ -259,16 +286,12 @@ class GFFMunger:
          
       if self.fasta_file_arg:
          if self.read_features_to_buffer:
-            self.logger.warning("extracting metadata and features (but not FASTA) from GFF3 file "+ gff_filename)
             self.logger.debug("extracting metadata and features (but not FASTA) from GFF3 file "+ gff_filename)
          else:
-            self.logger.warning("extracting metadata (only) from GFF3 file "+ gff_filename)
             self.logger.debug("extracting metadata (only) from GFF3 file "+ gff_filename)
       elif self.read_features_to_buffer:
-            self.logger.warning("extracting metadata, features and FASTA (if there is any) from GFF3 file "+ gff_filename)
             self.logger.debug("extracting metadata, features and FASTA (if there is any) from GFF3 file "+ gff_filename)
       else:
-            self.logger.warning("extracting metadata and FASTA (if there is any) from GFF3 file "+ gff_filename)
             self.logger.debug("extracting metadata and FASTA (if there is any) from GFF3 file "+ gff_filename)
       
       self.input_metadata  = None
@@ -489,16 +512,45 @@ class GFFMunger:
          self.logger.debug("Exporting GFF3 to STDOUT")
          handle = sys.stdout
 
+      # write metadata
       handle.write( self.input_metadata )
+      
+      # write features
       num_features_written=0
       for this_feature in self.gffutils_db.all_features(order_by=self.output_feature_sort):
          num_features_written+=1
          handle.write( str(this_feature)+"\n" )
       self.logger.info("extracted and wrote "+str(num_features_written)+" features from gffutils db")
-      if self.input_fasta is not None:
-         handle.write( self.input_fasta )
+      
+      # write fasta
+      if self.fasta_file_arg is not None:
+         if self.faidx is None:
+            raise AssertionError("When reading dequences from a separate FASTA file, a pxfaidx.Fasta object must be created before export")
+         num_seq_written   = 0
+         for this_seq_id in self.gffutils_db_sequences():
+            try:
+               handle.write(  ">"+this_seq_id               +"\n"+
+                              str(self.faidx[this_seq_id])  +"\n"
+                              )
+               num_seq_written+=1
+               self.logger.debug("Writing FASTA sequence "+str(num_seq_written)+": "+str(this_seq_id))
+            except KeyError:
+               self.logger.error("The GFF3 input included sequence "+this_seq_id+" which was not found in the FASTA input:  output will not include this in the FASTA")
+      else:
+         if self.input_fasta is not None:
+            handle.write( self.input_fasta )
          
       handle.close()
       
       return(True)
       
+
+
+   def gffutils_db_sequences(self):
+      """generator that yields each sequence in the gffutils db"""
+      sequences_found = []
+      for this_gene in self.gffutils_db.features_of_type('gene', order_by='seqid,start'):
+         if this_gene.seqid in sequences_found:
+            continue
+         sequences_found.append(this_gene.seqid)
+         yield this_gene.seqid

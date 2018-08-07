@@ -216,6 +216,7 @@ class GFFMunger:
       if 0 == cp.returncode:
          return True
       if not silent:
+         print(gff_filename+" is not valid GFF3:")
          print(cp.stderr)
       return False
 
@@ -523,7 +524,11 @@ class GFFMunger:
       self.logger.info("extracted and wrote "+str(num_features_written)+" features from gffutils db")
       
       # write fasta
+      handle.write("##FASTA\n")
       if self.fasta_file_arg is not None:
+         # using a separate FASTA file; write sequences from that file
+         # if a sequence exists in the FASTA file but is not referenced in the input GFF3, it is *not* written
+         # if a sequence is referenced in the input GFF3 but doesn't exist in the FASTA, KeyError is raised
          if self.faidx is None:
             raise AssertionError("When reading dequences from a separate FASTA file, a pxfaidx.Fasta object must be created before export")
          num_seq_written   = 0
@@ -537,6 +542,7 @@ class GFFMunger:
             except KeyError:
                self.logger.error("The GFF3 input included sequence "+this_seq_id+" which was not found in the FASTA input:  output will not include this in the FASTA")
       else:
+         # using FASTA from the input GFF3 => write whatever was in the input (possibly nowt)
          if self.input_fasta is not None:
             handle.write( self.input_fasta )
          

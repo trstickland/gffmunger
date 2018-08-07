@@ -38,7 +38,7 @@ annotated_feature_types :
 # Expect that this will be False, but this flag exists because of a slight ambiguity in the spec.,
 # which makes it desirable to switch behaviour in a hurry ;-)
 only_transfer_anot_to_mRNA : False
-                        
+
 # For use of genometools to validate GFF3 input.
 gt_path                 : '/usr/bin/gt'
 gff3_validator_tool     : 'gff3validator'

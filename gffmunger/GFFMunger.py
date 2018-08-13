@@ -453,7 +453,7 @@ class GFFMunger:
       for this_parent in self.gffutils_db.parents(derives_from):
          num_parents += 1
       if not 1 == num_parents:
-         #raise AssertionError("a polypeptide must have exactly one parent feature, found "+str(num_parents)+" parents of "+derives_from)
+         # raise AssertionError("a polypeptide must have exactly one parent feature, found "+str(num_parents)+" parents of "+derives_from)
          self.logger.error("a polypeptide must have exactly one parent feature, found "+str(num_parents)+" parents of "+derives_from+": cannot transfer its annotations")
          return(None)
 

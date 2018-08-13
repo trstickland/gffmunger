@@ -7,7 +7,7 @@ from gffmunger.GFFMunger import GFFMunger
 
 test_modules_dir        = os.path.dirname(   os.path.realpath( __file__ ) )
 data_dir                = os.path.join(      test_modules_dir, 'data' )
-test_gff_file           = os.path.join(      data_dir,         'SMALL_SAMPLE.gff3.gz' )                  # must be valid GFF3 with *no* FASTA
+test_gff_file           = os.path.join(      data_dir,         'SMALL_SAMPLE.gff3.gz' )            # must be valid GFF3 with *no* FASTA
 test_gff_and_fasta_file = os.path.join(      data_dir,         'SMALL_SAMPLE_INCL_FASTA.gff3.gz' ) # must be valid GFF3 with FASTA
 test_gff_db_file        = os.path.join(      data_dir,         'gffutils_test.db' )
 

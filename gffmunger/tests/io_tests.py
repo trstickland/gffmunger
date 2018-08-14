@@ -1,5 +1,6 @@
 import argparse
 import gffutils
+import logging
 import os
 import pyfaidx
 import unittest
@@ -27,19 +28,6 @@ class IO_Tests(unittest.TestCase):
    
    @classmethod
    def setUpClass(self):
-      # quick & dirty -- copy & paste this from the gffmunger script
-      parser = argparse.ArgumentParser()
-      parser.add_argument('--verbose',       '-v',    action='store_true',    help = 'Turn on debugging [%(default)s]',                default = False)
-      parser.add_argument('--quiet',         '-q',    action='store_true',    help = 'Suppress all warnings [%(default)s]',            default = False)
-      #parser.add_argument('--version',                action='version',       version = str(version))
-      parser.add_argument('--no-validate',   '-n',    action='store_true',    help = 'Do not validate the input GFF3 [%(default)s]',   default = False)
-      parser.add_argument('--force',         '-f',    action='store_true',    help = 'Force writing of output file, even if it already exists [%(default)s]', default = False)
-      parser.add_argument('--fasta-file',    '-a',                            help = 'Read FASTA from separate file instead of GFF3 input')
-      parser.add_argument('--input-file',    '-i',                            help = 'Input file [STDIN]')
-      parser.add_argument('--output-file',   '-o',                            help = 'Output file [STDOUT]')
-      parser.add_argument('--config',        '-c',                            help = 'Config file [%(default)s]',                      default = 'config.yml')
-      #
-      self.argParser    = parser
       self.output_file  = __file__+'.'+uuid.uuid4().hex+'.gff3'
 
    @classmethod
@@ -49,11 +37,9 @@ class IO_Tests(unittest.TestCase):
      
    def test_000_gff3_with_fasta_io(self):
       """check functions for reading and validating a GFF3 file including FASTA, and writing it as output"""
-      gffmunger = GFFMunger(  self.argParser.parse_args( [  '--input-file',    test_gff_file,
-                                                            '--output-file',  self.output_file,
-                                                            ]
-                                                         )
-                              )
+      gffmunger = GFFMunger( None )
+      gffmunger.input_file_arg   = test_gff_file
+      gffmunger.output_file      = self.output_file
       self.assertEqual(test_gff_file,  gffmunger.get_gff3_source())
       self.assertTrue(gffmunger.validate_GFF3(test_gff_file))
       self.assertEqual(gffmunger.gffutils_db_filename, gffmunger.import_gff3())
@@ -73,12 +59,10 @@ class IO_Tests(unittest.TestCase):
 
    def test_020_gff3_i0(self):
       """check functions for retreiving input filename, and reading and validating a GFF3 file and separate FASTA file"""
-      newmunger = GFFMunger(  self.argParser.parse_args( [  '--input-file',   test_gff_no_fasta,
-                                                            '--fasta-file',   test_fasta_file,
-                                                            '--output-file',  self.output_file,
-                                                            ]
-                                                         )
-                              )
+      newmunger = GFFMunger( None )
+      newmunger.input_file_arg   = test_gff_no_fasta
+      newmunger.fasta_file_arg   = test_fasta_file
+      newmunger.output_file      = self.output_file
       self.assertEqual(test_gff_no_fasta,  newmunger.get_gff3_source())
       self.assertTrue(newmunger.validate_GFF3(test_gff_no_fasta))
       self.assertTrue(newmunger.validate_FASTA(test_fasta_file))
@@ -102,17 +86,17 @@ class IO_Tests(unittest.TestCase):
 
    def test_050_gff_error_handling(self):
       """checks handling of non-fatal errors encountered in GFF"""
-      yet_another_munger = GFFMunger(  self.argParser.parse_args( [  '--input-file',   broken_gff_file,
-                                                                     '--quiet',
-                                                                     ]
-                                                                  )
-                                       )
+      yet_another_munger = GFFMunger( None )
+      yet_another_munger.input_file_arg = broken_gff_file
       self.assertTrue(yet_another_munger.validate_GFF3(broken_gff_file)) # should pass validation despire bad relations
       with warnings.catch_warnings():
          warnings.filterwarnings("ignore", "unclosed file <_io\.TextIOWrapper", ResourceWarning, "gffutils", 668 )
          yet_another_munger.import_gff3(broken_gff_file)
          try:
+            oldloglevel = yet_another_munger.logger.level
+            yet_another_munger.logger.setLevel(logging.CRITICAL)
             yet_another_munger.move_annotations()
+            yet_another_munger.logger.setLevel(oldloglevel)
          except AssertionError:
             self.fail("AssertionError should not be raised by GFFMunger.move_annotations() when processing annotations in "+broken_gff_file)
       warnings.resetwarnings()

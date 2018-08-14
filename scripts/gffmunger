@@ -17,7 +17,16 @@ try:
 except pkg_resources.DistributionNotFound:
 	version = '0.0.1'
 
-config_filename = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','gffmunger-config.yml'))
+# looking for this file
+config_filename = 'gffmunger-config.yml'
+# first check under sys.prefix (will be here if installed with pip)
+config_sys_path = os.path.join(sys.prefix,'config')
+config_file_path = None
+if os.path.exists(config_sys_path):
+   config_file_path = os.path.join(config_sys_path,config_filename)
+# no joy, then look in gffmunger home directory (will be here if cloned from git)
+if config_file_path is None or not os.path.exists(config_file_path):
+   config_file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..',config_filename))
 
 parser = argparse.ArgumentParser(   description = 'A munger of GFF files.  Proper description to follow.',
                                     usage       = __file__+' [options]', formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -29,7 +38,7 @@ parser.add_argument('--force', '-f',         action='store_true',    default = F
 parser.add_argument('--fasta-file', '-a',    type=str,                                             help = 'Read FASTA from separate file instead of GFF3 input')
 parser.add_argument('--input-file', '-i',    type=str,                                             help = 'Read GFF3 from file instead of STDIN')
 parser.add_argument('--output-file', '-o',   type=str,                                             help = 'Write GFF3 to file instead of STDOUT')
-parser.add_argument('--config',  '-c',       type=str,               default = config_filename,    help = 'Config file [%(default)s]')
+parser.add_argument('--config',  '-c',       type=str,               default = config_file_path,   help = 'Config file [%(default)s]')
 parser.add_argument('--version',             action='version',       version = str(version),       help = 'Print version and exit')
 
 options = parser.parse_args()

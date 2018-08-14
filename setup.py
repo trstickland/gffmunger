@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-version = 'x.y.z'
+version = '0.0.1'
 if os.path.exists('VERSION'):
   version = open('VERSION').read().strip()
 

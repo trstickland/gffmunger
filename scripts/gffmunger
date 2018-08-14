@@ -17,7 +17,7 @@ try:
 except pkg_resources.DistributionNotFound:
 	version = '0.0.1'
 
-config_filename = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','config.yml'))
+config_filename = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','gffmunger-config.yml'))
 
 parser = argparse.ArgumentParser(   description = 'A munger of GFF files.  Proper description to follow.',
                                     usage       = __file__+' [options]', formatter_class=argparse.ArgumentDefaultsHelpFormatter

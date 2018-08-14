@@ -27,7 +27,7 @@ class GFFMunger:
          self.fasta_file_arg  = None
          self.input_file_arg  = '/dev/zero'
          self.output_file     = 'no_such_file'
-         self.config_file     = 'config.yml'
+         self.config_file     = 'gffmunger-config.yml'
       else:
          # this should be the normal case
          self.verbose         = options.verbose
@@ -38,7 +38,7 @@ class GFFMunger:
          self.input_file_arg  = options.input_file
          self.output_file     = options.output_file
          self.config_file     = options.config
-               
+         
       # set up logger
       self.logger = logging.getLogger(__name__)
       if self.verbose:
@@ -48,7 +48,7 @@ class GFFMunger:
          self.logger.setLevel(logging.CRITICAL)
       else:
          self.logger.setLevel(logging.WARNING)
-      
+
       # options from configuration file
       config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.config_file)
       try:

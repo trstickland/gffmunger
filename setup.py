@@ -21,6 +21,7 @@ setup(
     author_email='path-help@sanger.ac.uk',
     url='https://github.com/trstickland/gffmunger',
     scripts=glob.glob('scripts/*'),
+    data_files=[('config', ['gffmunger-config.yml'])]
     test_suite='nose.collector',
     tests_require=['nose >= 1.3'],
     install_requires=[

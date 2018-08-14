@@ -50,10 +50,13 @@ class GFFMunger:
          self.logger.setLevel(logging.WARNING)
       
       # options from configuration file
-      config_fh = open( os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.config_file),
-                        'r'
-                        );
-      self.config = yaml.load(config_fh)
+      config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.config_file)
+      try:
+         config_fh   = open(config_filename, 'r');
+         self.config = yaml.load(config_fh)
+      except Exception:
+         self.logger.critical("Can't read configuration file"+config_filename)
+         raise
       def config_value_is_true(config_value):
          return( str(config_value).lower() == 'true' )
       try:
@@ -80,7 +83,7 @@ class GFFMunger:
             self.logger.critical("FASTA file does not exist: "+ self.fasta_file_arg)
             sys.exit(1)
 
-      if self.input_file_arg:
+      if self.input_file_arg and "-" != str(self.input_file_arg):
          self.logger.info("Reading GFF3 input from "+ self.input_file_arg)
          if not os.path.exists(self.input_file_arg):
             self.logger.critical("Input file does not exist: "+ self.input_file_arg)
@@ -88,6 +91,8 @@ class GFFMunger:
       #reading from STDIN, but to avoid reading all the data into memory, we need a file to give to gffutils to parse
       #=> create unique temp filename to use an an input buffer
       else:
+         if self.input_file_arg:
+            self.input_file_arg = None
          self.logger.info("Reading GFF3 input from STDIN")
          self.temp_input_file = str(self.config['temp_input_file']).replace('<uid>',uuid.uuid4().hex)
          self.logger.debug("Temporary input buffer will be "+ self.temp_input_file)
@@ -95,12 +100,14 @@ class GFFMunger:
             self.logger.critical("Something badly wrong :-/   Should have a unique filename for the temporary input buffer, but it already exists: "+ self.temp_input_file)
             sys.exit(1)
             
-      if self.output_file:
+      if self.output_file and "-" != str(self.output_file):
          self.logger.info("Writing output to "+ self.output_file)
          if not self.force and os.path.exists(self.output_file):
             self.logger.critical("The output file already exists, please choose another filename: "+ self.output_file)
             sys.exit(1)
       else:
+         if self.output_file:
+            self.output_file = None
          self.logger.debug("Writing output to STDOUT")
       
 

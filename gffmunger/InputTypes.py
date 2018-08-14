@@ -3,8 +3,8 @@ import argparse
 
 class InputTypes:
 
-   def is_foo_valid(whatever):
+   def min_length_3(whatever):
       if len(str(whatever)) < 3:
-         raise argparse.ArgumentTypeError("'foo' is must contain at least 3 chars")
+         raise argparse.ArgumentTypeError("must contain at least 3 chars")
          return False
       return whatever

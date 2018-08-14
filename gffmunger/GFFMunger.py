@@ -41,13 +41,17 @@ class GFFMunger:
          
       # set up logger
       self.logger = logging.getLogger(__name__)
+      def setLogLevel(level):
+         self.logger.setLevel(level)
+         handler = logging.StreamHandler()
+         handler.setLevel(level)
+         self.logger.addHandler(handler)
       if self.verbose:
-         self.logger.setLevel(logging.INFO)
-         self.logger.warning("logging.debug & logging.info seem to be broken at the moment, you'll only see warnings & above :-/")
+         setLogLevel(logging.INFO)
       elif self.quiet:
-         self.logger.setLevel(logging.CRITICAL)
+         setLogLevel(logging.CRITICAL)
       else:
-         self.logger.setLevel(logging.WARNING)
+         setLogLevel(logging.WARNING)
 
       # options from configuration file
       config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.config_file)
@@ -109,9 +113,9 @@ class GFFMunger:
          if self.output_file:
             self.output_file = None
          self.logger.debug("Writing output to STDOUT")
-      
 
-            
+
+
    def run(self):
       try:
          # get GFF3 input, stdin or file; sets self.gff3_input_filename
@@ -234,6 +238,8 @@ class GFFMunger:
       Pass path of FASTA file; if valid, True is returned; if invalid, validator STDERR output is printed and False is returned
       Validation failure message printed to STDOUT; this can be supressed by passing the optional flag 'silent'"""
       self.logger.info("Validating FASTA file "+ fasta_filename)
+      if self.logger.isEnabledFor(logging.INFO):
+         print("*** logging INFO ***")
       with self.open_text_file(fasta_filename) as handle:
          fasta = SeqIO.parse(handle, "fasta")
          is_fasta = any(fasta)   # False when `fasta` is empty, i.e. wasn't a FASTA file
@@ -407,6 +413,8 @@ class GFFMunger:
          modified_feature_cache.append(this_polypeptide)
                   
       self.logger.info("found "+str(num_polypeptide)+" polypeptide features")
+      if self.logger.isEnabledFor(logging.INFO):
+         print("*** logging INFO ***")
       
       self.check_for_anotations(modified_feature_cache)
       
@@ -532,6 +540,8 @@ class GFFMunger:
          num_features_written+=1
          handle.write( str(this_feature)+"\n" )
       self.logger.info("extracted and wrote "+str(num_features_written)+" features from gffutils db")
+      if self.logger.isEnabledFor(logging.INFO):
+         print("*** logging INFO ***")
       
       # write fasta
       handle.write("##FASTA\n")

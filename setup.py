@@ -19,7 +19,7 @@ setup(
     packages = find_packages(),
     author='Tim Stickland',
     author_email='path-help@sanger.ac.uk',
-    url='https://github.com/trstickland/gffmunger',
+    url='https://github.com/sanger-pathogens/gffmunger',
     scripts=glob.glob('scripts/*'),
     data_files=[('config', ['gffmunger-config.yml'])],
     test_suite='nose.collector',

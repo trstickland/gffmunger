@@ -10,5 +10,7 @@ install:
   - sudo apt-get -y install genometools
   - pip3 install pyyaml gffutils
   - python3 setup.py install
+env:
+  - GENOMETOOLS_PATH='/usr/bin/gt'
 script:
   - "./run_tests.sh" 

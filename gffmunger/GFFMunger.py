@@ -28,6 +28,7 @@ class GFFMunger:
          self.input_file_arg  = '/dev/zero'
          self.output_file     = 'no_such_file'
          self.config_file     = 'gffmunger-config.yml'
+         self.gt_path_arg     = None
       else:
          # this should be the normal case
          self.verbose         = options.verbose
@@ -38,7 +39,8 @@ class GFFMunger:
          self.input_file_arg  = options.input_file
          self.output_file     = options.output_file
          self.config_file     = options.config
-         
+         self.gt_path_arg     = options.genometools
+
       # set up logger
       self.logger = logging.getLogger(__name__)
       def setLogLevel(level):
@@ -78,6 +80,18 @@ class GFFMunger:
          self.logger.critical("required parameter "+str(e)+" missing from configuration in "+self.config_file)
          raise
       config_fh.close()
+      
+      # apply any environment vaiables that override config file params
+      if 'GENOMETOOLS_PATH' in os.environ:
+         self.gt_path_env_var = os.environ['GENOMETOOLS_PATH']
+         if self.gt_path_env_var:
+            self.logger.info("Using genometools path from environment variable GENOMETOOLS_PATH ("+self.gt_path_env_var+") instead of "+self.config_file+"value "+self.gt_path)
+            self.gt_path = self.gt_path_env_var
+      
+      # apply any CLI args that override config file params
+      if self.gt_path_arg:
+         self.logger.info("Using genometools path from CLI argument ("+self.gt_path_arg+") instead of "+self.config_file+"value "+self.gt_path)
+         self.gt_path = self.gt_path_arg
 
       self.logger.debug("Using genometools "+self.gt_path+" for validation with the tool "+self.gff3_validator_tool+" (timeout "+str(self.gff3_valiation_timeout)+")")
 

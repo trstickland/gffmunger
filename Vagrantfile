@@ -69,7 +69,23 @@ Vagrant.configure("2") do |config|
    apt-get install -y git python3 python-setuptools python3-biopython python3-pip
    pip3 install dumper gffutils
    pip3 install --upgrade pip
-   ln -s /vagrant ./GFFMunger
+   ln -fs /vagrant ./GFFMunger
+   grep GENOMETOOLS_PATH /home/vagrant/.bashrc || echo 'export GENOMETOOLS_PATH="/usr/bin/gt"' >> /home/vagrant/.bashrc
+   ### uncomment following block if you want to use this VM for conda builds
+   # 
+   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+   add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+   apt-get update -qq
+   apt-get install --yes docker-ce
+   usermod -aG docker vagrant   
+   curl -o /usr/local/bin/circleci https://circle-downloads.s3.amazonaws.com/releases/build_agent_wrapper/circleci && \
+      chmod +x /usr/local/bin/circleci
+   curl -o /usr/local/bin/miniconda https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+      chmod +x /usr/local/bin/miniconda && \
+      echo "To finish conda install, log in and run" && \
+      echo "  bash /usr/local/bin/miniconda && source ~/.bashrc && conda install conda-build"
+   # 
+   ### end of conda requirements
   SHELL
 end
 

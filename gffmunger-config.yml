@@ -40,7 +40,8 @@ annotated_feature_types :
 only_transfer_anot_to_mRNA : False
 
 # For use of genometools to validate GFF3 input.
-gt_path                 : '/usr/bin/gt'
+# gt_path                 : '/usr/bin/gt'
+gt_path                 : '/software/pathogen/external/apps/usr/local/genometools-1.5.9/bin/gt'
 gff3_validator_tool     : 'gff3validator'
 gff3_validation_timeout : 60
 

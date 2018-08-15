@@ -39,6 +39,7 @@ parser.add_argument('--fasta-file', '-a',    type=str,                          
 parser.add_argument('--input-file', '-i',    type=str,                                             help = 'Read GFF3 from file instead of STDIN')
 parser.add_argument('--output-file', '-o',   type=str,                                             help = 'Write GFF3 to file instead of STDOUT')
 parser.add_argument('--config',  '-c',       type=str,               default = config_file_path,   help = 'Config file [%(default)s]')
+parser.add_argument('--genometools', '-g',   type=str,                                             help = 'genometools path (override path in config)')
 parser.add_argument('--version',             action='version',       version = str(version),       help = 'Print version and exit')
 
 options = parser.parse_args()

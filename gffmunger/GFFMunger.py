@@ -85,12 +85,12 @@ class GFFMunger:
       if 'GENOMETOOLS_PATH' in os.environ:
          self.gt_path_env_var = os.environ['GENOMETOOLS_PATH']
          if self.gt_path_env_var:
-            self.logger.info("Using genometools path from environment variable GENOMETOOLS_PATH ("+self.gt_path_env_var+") instead of "+self.config_file+"value "+self.gt_path)
+            self.logger.info("Using genometools path from environment variable GENOMETOOLS_PATH ("+self.gt_path_env_var+") instead of "+self.gt_path)
             self.gt_path = self.gt_path_env_var
       
       # apply any CLI args that override config file params
       if self.gt_path_arg:
-         self.logger.info("Using genometools path from CLI argument ("+self.gt_path_arg+") instead of "+self.config_file+"value "+self.gt_path)
+         self.logger.info("Using genometools path from CLI argument ("+self.gt_path_arg+") instead of "+self.gt_path)
          self.gt_path = self.gt_path_arg
 
       self.logger.debug("Using genometools "+self.gt_path+" for validation with the tool "+self.gff3_validator_tool+" (timeout "+str(self.gff3_valiation_timeout)+")")

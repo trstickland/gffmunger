@@ -16,7 +16,7 @@ Without `--input`, will read from standard input; without `--output`, will write
 [![Build Status](https://travis-ci.org/sanger-pathogens/gffmunger.svg?branch=master)](https://travis-ci.org/sanger-pathogens/gffmunger)
 
 # Installation
-The only dependancy is Python3. Assuming you have python 3.3+ and pip installed, just run:
+The only dependancy is Python3. Assuming you have python 3.6+ and pip installed, just run:
 ```
 pip3 install git+git://github.com/sanger-pathogens/gffmunger.git
 ```

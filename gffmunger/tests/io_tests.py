@@ -55,7 +55,7 @@ class IO_Tests(unittest.TestCase):
       warnings.resetwarnings()
       self.assertTrue(gffmunger.export_gff3())
       os.remove(gffmunger.output_file)
-
+      gffmunger.clean_up()
 
    def test_020_gff3_i0(self):
       """check functions for retreiving input filename, and reading and validating a GFF3 file and separate FASTA file"""
@@ -82,6 +82,7 @@ class IO_Tests(unittest.TestCase):
       warnings.resetwarnings()
       self.assertTrue(newmunger.export_gff3())
       os.remove(newmunger.output_file)
+      newmunger.clean_up()
 
 
    def test_050_gff_error_handling(self):
@@ -100,3 +101,4 @@ class IO_Tests(unittest.TestCase):
          except AssertionError:
             self.fail("AssertionError should not be raised by GFFMunger.move_annotations() when processing annotations in "+broken_gff_file)
       warnings.resetwarnings()
+      yet_another_munger.clean_up()

@@ -15,7 +15,7 @@ version = ''
 try:
 	version = pkg_resources.get_distribution("gffmunger").version
 except pkg_resources.DistributionNotFound:
-	version = '0.0.1'
+	version = '0.0.2'
 
 # looking for this file
 config_filename = 'gffmunger-config.yml'
@@ -28,9 +28,17 @@ if os.path.exists(config_sys_path):
 if config_file_path is None or not os.path.exists(config_file_path):
    config_file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..',config_filename))
 
-parser = argparse.ArgumentParser(   description = 'A munger of GFF files.  Proper description to follow.',
-                                    usage       = __file__+' [options]', formatter_class=argparse.ArgumentDefaultsHelpFormatter
+parser = argparse.ArgumentParser(   description       = "Munges GFF files. Use one or more of the following commands:\n"# 80 chars --->|
+                                                      + "  move_polypeptide_annot  transfer annotations from polypeptides to the\n"
+                                                      + "                          feature (e.g. mRNA) they derive from\n"
+                                                      + "  null                    do nothing\n",
+                                    #usage             = __file__+' [command1 .. commandN] [options]',
+                                    #formatter_class   = argparse.ArgumentDefaultsHelpFormatter,
+                                    formatter_class   = argparse.RawTextHelpFormatter
                                     )
+
+parser.add_argument('commands',  default = ['move_polypeptide_annot'],  metavar='command',   type=str,   nargs='*',  help  = "Command(s) defining how the GFF should be munged")
+
 parser.add_argument('--verbose',             action='store_true',    default = False,              help = 'Turn on debugging [%(default)s]')
 parser.add_argument('--quiet', '-q',         action='store_true',    default = False,              help = 'Suppress messages & warnings [%(default)s]')
 parser.add_argument('--no-validate', '-n',   action='store_true',    default = False,              help = 'Do not validate the input GFF3 [%(default)s]')

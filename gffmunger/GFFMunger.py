@@ -71,7 +71,7 @@ class GFFMunger:
       config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.config_file)
       try:
          config_fh   = open(config_filename, 'r');
-         self.config = yaml.load(config_fh)
+         self.config = yaml.safe_load(config_fh)
       except Exception:
          self.logger.critical("Can't read configuration file"+config_filename)
          raise

@@ -15,16 +15,25 @@ version = ''
 try:
 	version = pkg_resources.get_distribution("gffmunger").version
 except pkg_resources.DistributionNotFound:
-	version = '0.0.2'
+	version = '0.1.1'
 
 # looking for this file
-config_filename = 'gffmunger-config.yml'
-# first check under sys.prefix (will be here if installed with pip)
-config_sys_path = os.path.join(sys.prefix,'config')
-config_file_path = None
-if os.path.exists(config_sys_path):
-   config_file_path = os.path.join(config_sys_path,config_filename)
-# no joy, then look in gffmunger home directory (will be here if cloned from git)
+config_env_var       = 'GFFMUNGER_CONFIG'
+config_default_path  = '/etc/gffmunger'
+config_filename      = 'gffmunger-config.yml'
+config_file_path     = None
+# first, check environment variable has been set
+if config_env_var is not None and config_env_var in os.environ and os.environ[config_env_var] is not None:
+   config_file_path = os.environ[config_env_var]
+# second, check /etc/gffmunger
+if os.path.exists(config_default_path):
+   config_file_path = os.path.join(config_default_path,config_filename)
+# second check under sys.prefix (will be here if installed with pip)
+if config_file_path is None or not os.path.exists(config_file_path):
+   config_sys_path = os.path.join(sys.prefix,'config')
+   if os.path.exists(config_sys_path):
+      config_file_path = os.path.join(config_sys_path,config_filename)
+# lastly, then look in gffmunger home directory (will be here if cloned from git)
 if config_file_path is None or not os.path.exists(config_file_path):
    config_file_path = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..',config_filename))
 

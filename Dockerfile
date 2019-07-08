@@ -20,8 +20,6 @@ COPY  ./*config.yml  ${CONF_DIR}/
 RUN   pip3 install ${BUILD_DIR} && \
       bash -c "cd ${BUILD_DIR} && . ./run_tests.sh --verbose"
 
-RUN   bash -c "echo; echo 'alias gffmunger=\"gffmunger --config ${CONF_DIR}/gffmunger-config.yml\"'; echo" >> ${BASHRC}
-
 VOLUME /var/data
 
 CMD   echo "Usage:  docker run -v \`pwd\`:/var/data -it <IMAGE_NAME> bash" && \

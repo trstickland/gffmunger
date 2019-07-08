@@ -27,8 +27,8 @@ setup(
     install_requires=[
          'biopython >= 1.68',
          #'pyfastaq >= 3.12.0'
-         'gffutils',
-         'pyyaml' 
+         'gffutils', # no version requirements known; tested with 0.9
+         'pyyaml'    # no version requirements known; tested with 5.1.1
        ],
     license='GPLv3',
     classifiers=[

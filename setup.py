@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-version = '0.0.1'
+version = '0.0.2'
 if os.path.exists('VERSION'):
   version = open('VERSION').read().strip()
 
@@ -27,7 +27,8 @@ setup(
     install_requires=[
          'biopython >= 1.68',
          #'pyfastaq >= 3.12.0'
-         'gffutils'
+         'gffutils', # no version requirements known; tested with 0.9
+         'pyyaml'    # no version requirements known; tested with 5.1.1
        ],
     license='GPLv3',
     classifiers=[

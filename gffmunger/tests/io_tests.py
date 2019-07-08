@@ -49,7 +49,7 @@ class IO_Tests(unittest.TestCase):
       with warnings.catch_warnings():
          warnings.filterwarnings("ignore", "unclosed file <_io\.TextIOWrapper", ResourceWarning, "gffutils", 668 )
          try:
-            gffmunger.move_annotations()
+            gffmunger.move_polypeptide_annotations()
          except:
             self.fail("Failed to process valid GFF3 file "+test_gff_file)
       warnings.resetwarnings()
@@ -76,7 +76,7 @@ class IO_Tests(unittest.TestCase):
          self.assertIsInstance(newmunger.import_fasta(), pyfaidx.Fasta)
          self.assertIsInstance(newmunger.import_fasta(test_fasta_file), pyfaidx.Fasta)
          try:
-            newmunger.move_annotations()
+            newmunger.move_polypeptide_annotations()
          except:
             self.fail("Failed to process valid GFF3 file "+test_gff_no_fasta)
       warnings.resetwarnings()
@@ -96,9 +96,9 @@ class IO_Tests(unittest.TestCase):
          try:
             oldloglevel = yet_another_munger.logger.level
             yet_another_munger.logger.setLevel(logging.CRITICAL)
-            yet_another_munger.move_annotations()
+            yet_another_munger.move_polypeptide_annotations()
             yet_another_munger.logger.setLevel(oldloglevel)
          except AssertionError:
-            self.fail("AssertionError should not be raised by GFFMunger.move_annotations() when processing annotations in "+broken_gff_file)
+            self.fail("AssertionError should not be raised by GFFMunger.move_polypeptide_annotations() when processing annotations in "+broken_gff_file)
       warnings.resetwarnings()
       yet_another_munger.clean_up()

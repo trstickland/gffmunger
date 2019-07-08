@@ -14,12 +14,16 @@ from Bio import SeqIO
 from pyfaidx import Fasta
 
 class GFFMunger:
-   
+
    def __init__(self,options):
+
+      self.known_commands = ['move_polypeptide_annot', 'null']
+
       # CLI options
       if None == options:
          # passing None allow class to be constructed without options being defined; intended for example to permit tests
          # *not* recommended for normal usage, for which the 'gffmunger' script is provided
+         self.commands        = self.known_commands.copy()
          self.verbose         = False
          self.quiet           = False
          self.novalidate      = False
@@ -31,6 +35,7 @@ class GFFMunger:
          self.gt_path_arg     = None
       else:
          # this should be the normal case
+         self.commands        = options.commands
          self.verbose         = options.verbose
          self.quiet           = options.quiet
          self.novalidate      = options.no_validate
@@ -55,11 +60,18 @@ class GFFMunger:
       else:
          setLogLevel(logging.WARNING)
 
+      # check command(s)
+      for n,c in enumerate(self.commands):
+         if c in self.known_commands:
+            self.logger.info('Munge command '+str(n+1)+': '+c)
+         else:
+            raise ValueError('Munge command "'+c+'" not recognized')
+
       # options from configuration file
       config_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', self.config_file)
       try:
          config_fh   = open(config_filename, 'r');
-         self.config = yaml.load(config_fh)
+         self.config = yaml.safe_load(config_fh)
       except Exception:
          self.logger.critical("Can't read configuration file"+config_filename)
          raise
@@ -148,17 +160,22 @@ class GFFMunger:
             self.import_fasta(self.fasta_file_arg)
          # read GFF3 metadta (and poss. other bits) into text buffer(s)
          self.extract_GFF3_components(self.gff3_input_filename)
-         # transfer annotations from polypeptide features to the feature they derived from
-         self.move_annotations()
+
+         if 'move_polypeptide_annot' in self.commands:
+            self.logger.info('transferring polypeptide feature annotations')
+            # transfer annotations from polypeptide features to the feature they derived from
+            self.move_polypeptide_annotations()
+
          # write new GFF3 to file or stdout
          self.export_gff3()
          # if GFF3 file was written, validate it if required
          if self.output_file is not None and not self.novalidate:
             self.validate_GFF3(self.output_file)
-      # whack temporary files
+
       except Exception:
          self.clean_up()
          raise
+ 
       self.clean_up()
 
 
@@ -377,7 +394,7 @@ class GFFMunger:
 
 
 
-   def move_annotations(self):
+   def move_polypeptide_annotations(self):
       """moves annotations from the polypeptide feature to the feature from which it derives (e.g. mRNA)"""
       num_polypeptide=0
       # this list caches all modified Feature objects

@@ -13,4 +13,4 @@ install:
 env:
   - GENOMETOOLS_PATH='/usr/bin/gt'
 script:
-  - "./run_tests.sh" 
+  - ". ./run_tests.sh" 

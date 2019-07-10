@@ -72,7 +72,8 @@ class IO_Tests(unittest.TestCase):
       self.assertEqual(expected_num_metadata_lines,      newmunger.extract_GFF3_components())
       self.assertEqual(expected_num_metadata_lines,      newmunger.extract_GFF3_components(test_gff_no_fasta))
       with warnings.catch_warnings():
-         warnings.filterwarnings("ignore", "unclosed file", ResourceWarning, "gffutils", 0 )
+         warnings.filterwarnings("ignore", "unclosed file <_io\.FileIO",   ResourceWarning, "six",      581 )
+         warnings.filterwarnings("ignore", "",                ResourceWarning, "gffutils", 0 )
          self.assertIsInstance(newmunger.import_fasta(), pyfaidx.Fasta)
          self.assertIsInstance(newmunger.import_fasta(test_fasta_file), pyfaidx.Fasta)
          try:

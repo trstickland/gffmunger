@@ -1,6 +1,7 @@
 import unittest
 import os
 import gffutils
+import uuid
 import warnings
 
 from gffmunger.GFFMunger import GFFMunger
@@ -9,7 +10,7 @@ test_modules_dir        = os.path.dirname(   os.path.realpath( __file__ ) )
 data_dir                = os.path.join(      test_modules_dir, 'data' )
 test_gff_file           = os.path.join(      data_dir,         'SMALL_SAMPLE.gff3.gz' )            # must be valid GFF3 with *no* FASTA
 test_gff_and_fasta_file = os.path.join(      data_dir,         'SMALL_SAMPLE_INCL_FASTA.gff3.gz' ) # must be valid GFF3 with FASTA
-test_gff_db_file        = os.path.join(      data_dir,         'gffutils_test.db' )
+test_gff_db_file        = '/tmp/gffutils_test.<uid>.db'
 
 #sample_gff_gene_id      = 'PF3D7_0100100' # use with SAMPLE.gff3
 sample_gff_gene_id      = '13J3.01' # use with SMALL_SAMPLE.gff3
@@ -31,7 +32,7 @@ class GFF_Tests(unittest.TestCase):
          warnings.filterwarnings("ignore", "generator '_FileIterator\.",         PendingDeprecationWarning, "gffutils", 186 )
          warnings.filterwarnings("ignore", "unclosed file <_io\.TextIOWrapper",  ResourceWarning,           "gffutils", 668 )
          self.test_gff_db = gffutils.create_db( test_gff_file,
-                                                dbfn                    = test_gff_db_file,
+                                                dbfn                    = str(test_gff_db_file).replace('<uid>',uuid.uuid4().hex),
                                                 force                   = True,     # overwrite previous testing db file
                                                 merge_strategy          = 'error',
                                                 keep_order              = False,    # True doesn't appear to maintain attribute order :-/  (and turning this off may be faster)

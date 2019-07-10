@@ -46,7 +46,7 @@ gff3_validation_timeout : 60
 
 # Working filenames; shouldn't need to edit these unless their location offends.
 # A UUID is substituted for <uid> to avoid clashes if there are concurrent gffmunder processes.
-gffutils_db_filename : 'gffutils.<uid>.db'
+gffutils_db_filename : '/tmp/gffutils.<uid>.db'
 temp_input_file      : '/tmp/gffmunger_input.<uid>.gff3'
 
 # Causes features in the input GFF3 to be read into a read_features_to_buffer.

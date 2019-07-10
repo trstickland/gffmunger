@@ -22,12 +22,13 @@ config_env_var       = 'GFFMUNGER_CONFIG'
 config_default_path  = '/etc/gffmunger'
 config_filename      = 'gffmunger-config.yml'
 config_file_path     = None
-# first, check environment variable has been set
+# first, check if config file path is defined in environment
 if config_env_var is not None and config_env_var in os.environ and os.environ[config_env_var] is not None:
    config_file_path = os.environ[config_env_var]
 # second, check /etc/gffmunger
-if os.path.exists(config_default_path):
-   config_file_path = os.path.join(config_default_path,config_filename)
+if config_file_path is None or not os.path.exists(config_file_path):
+   if os.path.exists(config_default_path):
+      config_file_path = os.path.join(config_default_path,config_filename)
 # second check under sys.prefix (will be here if installed with pip)
 if config_file_path is None or not os.path.exists(config_file_path):
    config_sys_path = os.path.join(sys.prefix,'config')

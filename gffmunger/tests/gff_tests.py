@@ -1,7 +1,7 @@
 import unittest
 import os
 import gffutils
-import uid
+import uuid
 import warnings
 
 from gffmunger.GFFMunger import GFFMunger
@@ -32,7 +32,7 @@ class GFF_Tests(unittest.TestCase):
          warnings.filterwarnings("ignore", "generator '_FileIterator\.",         PendingDeprecationWarning, "gffutils", 186 )
          warnings.filterwarnings("ignore", "unclosed file <_io\.TextIOWrapper",  ResourceWarning,           "gffutils", 668 )
          self.test_gff_db = gffutils.create_db( test_gff_file,
-                                                dbfn                    = str(test_gff_db_file).replace('<uid>',uuid.uuid4().hex)
+                                                dbfn                    = str(test_gff_db_file).replace('<uid>',uuid.uuid4().hex),
                                                 force                   = True,     # overwrite previous testing db file
                                                 merge_strategy          = 'error',
                                                 keep_order              = False,    # True doesn't appear to maintain attribute order :-/  (and turning this off may be faster)

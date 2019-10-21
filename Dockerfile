@@ -7,7 +7,12 @@ ENV   BUILD_DIR   /gffmunger-build
 ENV   CONF_DIR    /etc/gffmunger
 
 RUN   apt-get update -qq
-RUN   apt-get install -y genometools git python3 python-setuptools python3-biopython python3-pip
+RUN   apt-get install -y locales genometools git python3 python-setuptools python3-biopython python3-pip
+
+# Configure locales.
+# Select a specific locale by passing the LANG variable into docker run.
+RUN cp /usr/share/i18n/SUPPORTED /etc/locale.gen
+RUN locale-gen
 
 # RUN   pip3 install dumper gffutils pyyaml
 
